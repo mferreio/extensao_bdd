@@ -875,6 +875,12 @@ function handleInputEvent(event) {
                     ) {
                         return;
                     }
+                    // Busca o parentSelector (linha, tbody, table, etc)
+                    let parentSelector = '';
+                    let parent = target.closest && (target.closest('tr') || target.closest('tbody') || target.closest('table'));
+                    if (parent) {
+                        parentSelector = getCSSSelector(parent);
+                    }
                     window.interactions.push({
                         step,
                         acao: 'preenche',
@@ -883,6 +889,7 @@ function handleInputEvent(event) {
                         cssSelector,
                         xpath,
                         valorPreenchido: value,
+                        parentSelector,
                         timestamp: Date.now()
                     });
                     renderLogWithActions();
@@ -1040,17 +1047,50 @@ function exportSelectedFeatures(selectedIdxs) {
             let featureText = `Feature: ${feature.name}\n`;
             (feature.cenarios || []).forEach((cenario, cIdx) => {
                 featureText += `  Scenario: ${cenario.name}\n`;
-                (cenario.interactions || []).forEach((interaction, iIdx) => {
-                    let frase = '';
+                const interactions = cenario.interactions || [];
+                let i = 0;
+                while (i < interactions.length) {
+                    const interaction = interactions[i];
                     let step = interaction.step || 'When';
-                    // Garante que o passo Given de acesso à página inicial seja padronizado
+                    // Agrupamento de "preenche" consecutivos do mesmo contexto
+                    if (interaction.acao === 'preenche') {
+                        const group = [];
+                        const parentSelector = interaction.parentSelector || '';
+                        let j = i;
+                        while (
+                            j < interactions.length &&
+                            interactions[j].acao === 'preenche' &&
+                            (interactions[j].parentSelector || '') === parentSelector
+                        ) {
+                            group.push(interactions[j]);
+                            j++;
+                        }
+                        // Só agrupa se houver mais de um no mesmo contexto
+                        if (group.length > 1) {
+                            let stepLabel = step.charAt(0).toUpperCase() + step.slice(1).toLowerCase();
+                            featureText += `    ${stepLabel} preencho os campos da tabela:\n`;
+                            featureText += `      | Campo | Valor |\n`;
+                            group.forEach(item => {
+                                featureText += `      | ${item.nomeElemento} | ${item.valorPreenchido} |\n`;
+                            });
+                            i = j;
+                            continue;
+                        } else {
+                            // Caso só tenha um, exporta normalmente
+                            let valor = (interaction.valorPreenchido !== undefined && interaction.valorPreenchido !== null && interaction.valorPreenchido !== '') ? interaction.valorPreenchido : '<valor>';
+                            let frase = `o usuário preenche o campo ${interaction.nomeElemento ? '"' + interaction.nomeElemento + '"' : ''} com "${valor}"`;
+                            let stepLabel = step.charAt(0).toUpperCase() + step.slice(1).toLowerCase();
+                            featureText += `    ${stepLabel} ${frase}\n`;
+                            i++;
+                            continue;
+                        }
+                    }
+                    // Exporta normalmente para outras ações
+                    let frase = '';
                     if (step === 'Given' && interaction.acao === 'acessa_url' && interaction.nomeElemento && interaction.nomeElemento.startsWith('http')) {
                         frase = `que o usuário acessa a página \"${interaction.nomeElemento}\"`;
                     } else if (interaction.stepText) {
                         frase = interaction.stepText;
-                    } else if (interaction.acao === 'preenche') {
-                        let valor = (interaction.valorPreenchido !== undefined && interaction.valorPreenchido !== null && interaction.valorPreenchido !== '') ? interaction.valorPreenchido : '<valor>';
-                        frase = `o usuário preenche o campo ${interaction.nomeElemento ? '"' + interaction.nomeElemento + '"' : ''} com "${valor}"`;
                     } else if (interaction.acao === 'clica') {
                         frase = `o usuário clica no elemento ${interaction.nomeElemento ? '"' + interaction.nomeElemento + '"' : ''}`;
                     } else if (interaction.acao === 'upload') {
@@ -1065,10 +1105,10 @@ function exportSelectedFeatures(selectedIdxs) {
                     } else {
                         frase = `${interaction.acaoTexto || interaction.acao || 'ação'} no elemento ${interaction.nomeElemento ? '"' + interaction.nomeElemento + '"' : ''}`;
                     }
-                    // Primeira letra maiúscula para Given, When, Then
                     let stepLabel = step.charAt(0).toUpperCase() + step.slice(1).toLowerCase();
                     featureText += `    ${stepLabel} ${frase}\n`;
-                });
+                    i++;
+                }
                 featureText += '\n';
             });
             const featureFilename = `${featureSlug}.feature`;
@@ -1190,6 +1230,7 @@ class Page${slugify(feature.name, true)}:
         """
         try:
             self.driver.get(url)
+            print(f"[INFO] Acessou a URL '{url}' com sucesso.")
         except Exception as e:
             print(f"[ERRO] Falha ao acessar URL '{url}': {e}")
             raise
@@ -1200,6 +1241,7 @@ class Page${slugify(feature.name, true)}:
         """
         try:
             self.driver.find_element(*locator).click()
+            print(f"[INFO] Clique realizado com sucesso no elemento {locator}.")
         except (NoSuchElementException, ElementNotInteractableException) as e:
             print(f"[ERRO] Falha ao clicar no elemento {locator}: {e}")
             raise
@@ -1212,6 +1254,7 @@ class Page${slugify(feature.name, true)}:
             el = self.driver.find_element(*locator)
             el.clear()
             el.send_keys(valor)
+            print(f"[INFO] Preenchimento do campo {locator} com valor '{valor}' realizado com sucesso.")
         except NoSuchElementException as e:
             print(f"[ERRO] Elemento {locator} não encontrado: {e}")
             raise
@@ -1230,6 +1273,7 @@ class Page${slugify(feature.name, true)}:
             from selenium.webdriver.support.ui import Select
             select = Select(self.driver.find_element(*locator))
             select.select_by_visible_text(valor)
+            print(f"[INFO] Seleção do valor '{valor}' realizada com sucesso em {locator}.")
         except (NoSuchElementException, ElementNotInteractableException) as e:
             print(f"[ERRO] Falha ao selecionar valor '{valor}' em {locator}: {e}")
             raise
@@ -1240,6 +1284,7 @@ class Page${slugify(feature.name, true)}:
         """
         try:
             self.driver.find_element(*locator).send_keys(caminho_arquivo)
+            print(f"[INFO] Upload do arquivo '{caminho_arquivo}' realizado com sucesso em {locator}.")
         except (NoSuchElementException, ElementNotInteractableException) as e:
             print(f"[ERRO] Falha ao fazer upload do arquivo '{caminho_arquivo}' em {locator}: {e}")
             raise
@@ -1252,6 +1297,7 @@ class Page${slugify(feature.name, true)}:
             from selenium.webdriver.support.ui import WebDriverWait
             from selenium.webdriver.support import expected_conditions as EC
             WebDriverWait(self.driver, timeout).until(EC.presence_of_element_located(locator))
+            print(f"[INFO] Elemento {locator} apareceu na tela (timeout={timeout}s).")
         except TimeoutException as e:
             print(f"[ERRO] Timeout ao esperar elemento {locator}: {e}")
             raise
@@ -1264,6 +1310,7 @@ class Page${slugify(feature.name, true)}:
             from selenium.webdriver.support.ui import WebDriverWait
             from selenium.webdriver.support import expected_conditions as EC
             WebDriverWait(self.driver, timeout).until_not(EC.presence_of_element_located(locator))
+            print(f"[INFO] Elemento {locator} desapareceu da tela (timeout={timeout}s).")
         except TimeoutException as e:
             print(f"[ERRO] Timeout ao esperar desaparecimento do elemento {locator}: {e}")
             raise
@@ -1274,9 +1321,20 @@ class Page${slugify(feature.name, true)}:
         """
         try:
             self.driver.find_element(*locator)
+            print(f"[INFO] Elemento {locator} existe na página.")
             return True
         except NoSuchElementException:
+            print(f"[INFO] Elemento {locator} não existe na página.")
             return False
+
+    def espera_segundos(self, tempo):
+        """
+        Aguarda o tempo informado em segundos.
+        """
+        import time
+        print(f"[INFO] Esperando {tempo} segundos...")
+        time.sleep(tempo)
+        print(f"[INFO] Espera de {tempo} segundos finalizada.")
 
     # Adicione outros métodos genéricos conforme necessário
 `;
@@ -1304,33 +1362,80 @@ class Page${slugify(feature.name, true)}:
             // Step para inicializar o Page Object
             stepsPy += `@given('que o usuário acessa a página "{url}"')\ndef step_acessa_pagina_inicial(context, url):\n    context.page = Page${slugify(feature.name, true)}(context.driver)\n    context.page.acessar_url(url)\n\n`;
 
-            // Gerar steps dinamicamente para cada interação
-            let usedLocators = new Set();
-            (feature.cenarios || []).forEach((cenario, cIdx) => {
-                (cenario.interactions || []).forEach((interaction, iIdx) => {
-                    let locatorName = getLocatorName(interaction);
-                    // Garante que o nome do locator é igual ao do pages.py
-                    if (!locatorSet.has(locatorName)) {
-                        // Se não existe, pula (não foi gerado no pages.py)
-                        return;
-                    }
-                    // Evita steps duplicados para o mesmo locator/ação/frase
-                    const stepKey = `${interaction.acao}|${locatorName}|${interaction.stepText || ''}|${interaction.nomeElemento || ''}`;
-                    if (usedLocators.has(stepKey)) return;
-                    usedLocators.add(stepKey);
 
-                    // Gera o decorator e função conforme a ação
+            // --- Agrupamento de steps "preenche" com DataTable ---
+            let usedLocators = new Set();
+            let datatableStepEmitted = false;
+            (feature.cenarios || []).forEach((cenario, cIdx) => {
+                const interactions = cenario.interactions || [];
+                let i = 0;
+                while (i < interactions.length) {
+                    const interaction = interactions[i];
+                    // Detecta agrupamento de "preenche" do mesmo contexto
+                    if (interaction.acao === 'preenche') {
+                        const group = [];
+                        const parentSelector = interaction.parentSelector || '';
+                        let j = i;
+                        while (
+                            j < interactions.length &&
+                            interactions[j].acao === 'preenche' &&
+                            (interactions[j].parentSelector || '') === parentSelector
+                        ) {
+                            group.push(interactions[j]);
+                            j++;
+                        }
+                        if (group.length > 1 && !datatableStepEmitted) {
+                            // Step único para DataTable, com validação e comentários
+                            stepsPy += `# Step que preenche múltiplos campos de uma tabela Gherkin usando DataTable\n`;
+                            stepsPy += `@when('preencho os campos da tabela:')\ndef step_preencho_campos_tabela(context):\n    """Preenche múltiplos campos usando DataTable do Gherkin.\n    Cada linha da tabela deve conter as colunas 'Campo' e 'Valor'.\n    Se o campo não existir nos locators, lança uma exceção para facilitar o debug.\n    """\n    for row in context.table:\n        campo = row['Campo']\n        valor = row['Valor']\n        try:\n            locator = getattr(Locators${slugify(feature.name, true)}, campo.replace(' ', '_'))\n        except AttributeError:\n            raise Exception(f"Locator não encontrado para o campo: {campo}")\n        context.page.preencher(locator, valor)\n\n`;
+                            datatableStepEmitted = true;
+                            i = j;
+                            continue;
+                        } else if (group.length === 1) {
+                            // Step individual padrão, com comentário
+                            let item = group[0];
+                            let locatorName = getLocatorName(item);
+                            if (!locatorSet.has(locatorName)) {
+                                i++;
+                                continue;
+                            }
+                            const stepKey = `preenche|${locatorName}|${item.stepText || ''}|${item.nomeElemento || ''}`;
+                            if (usedLocators.has(stepKey)) {
+                                i++;
+                                continue;
+                            }
+                            usedLocators.add(stepKey);
+                            let frase = item.stepText ? item.stepText : `o usuário preenche o campo ${item.nomeElemento ? '"' + item.nomeElemento + '"' : ''} com "{valor}"`;
+                            let decorator = (item.step === 'Given') ? '@given' : (item.step === 'Then' ? '@then' : '@when');
+                            let funcName = `step_preenche_${locatorName}_${cIdx}_${i}`;
+                            stepsPy += `# Step que preenche um campo individual\n`;
+                            stepsPy += `${decorator}('${frase}')\ndef ${funcName}(context, valor):\n    """Preenche o campo '${item.nomeElemento}' com o valor informado."""\n    context.page.preencher(Locators${slugify(feature.name, true)}.${locatorName}, valor)\n\n`;
+                            i++;
+                            continue;
+                        } else {
+                            i = j;
+                            continue;
+                        }
+                    }
+                    // Outras ações
+                    let locatorName = getLocatorName(interaction);
+                    if (!locatorSet.has(locatorName)) {
+                        i++;
+                        continue;
+                    }
+                    const stepKey = `${interaction.acao}|${locatorName}|${interaction.stepText || ''}|${interaction.nomeElemento || ''}`;
+                    if (usedLocators.has(stepKey)) {
+                        i++;
+                        continue;
+                    }
+                    usedLocators.add(stepKey);
                     let decorator = '';
                     let funcName = '';
                     let body = '';
                     let frase = '';
                     let params = '';
                     if (interaction.stepText) {
-                        // Usa a frase exata do .feature se existir
                         frase = interaction.stepText;
-                    } else if (interaction.acao === 'preenche') {
-                        // Corrige para usar {valor} no decorator
-                        frase = `o usuário preenche o campo ${interaction.nomeElemento ? '"' + interaction.nomeElemento + '"' : ''} com "{valor}"`;
                     } else if (interaction.acao === 'clica') {
                         frase = `o usuário clica no elemento ${interaction.nomeElemento ? '"' + interaction.nomeElemento + '"' : ''}`;
                     } else if (interaction.acao === 'upload') {
@@ -1344,29 +1449,25 @@ class Page${slugify(feature.name, true)}:
                     } else {
                         frase = `${interaction.acaoTexto || interaction.acao || 'ação'} no elemento ${interaction.nomeElemento ? '"' + interaction.nomeElemento + '"' : ''}`;
                     }
-
-                    // Define o decorator
                     if (interaction.step === 'Given') decorator = '@given';
                     else if (interaction.step === 'Then') decorator = '@then';
                     else decorator = '@when';
-
-                    // Nome da função
-                    funcName = `step_${interaction.acao}_${locatorName}_${cIdx}_${iIdx}`;
-
-                    // Parâmetros e corpo
-                    if (interaction.acao === 'preenche') {
-                        params = 'context, valor';
-                        body = `    context.page.preencher(Locators${slugify(feature.name, true)}.${locatorName}, valor)`;
-                    } else if (interaction.acao === 'upload') {
+                    funcName = `step_${interaction.acao}_${locatorName}_${cIdx}_${i}`;
+                    if (interaction.acao === 'upload') {
                         params = 'context, arquivo';
                         body = `    context.page.upload_arquivo(Locators${slugify(feature.name, true)}.${locatorName}, arquivo)`;
                     } else if (interaction.acao === 'espera_segundos') {
-                        params = 'context';
-                        let tempo = interaction.tempoEspera || 1;
-                        body = `    import time\n    time.sleep(${tempo})`;
+                        // Step aceita parâmetro de tempo
+                        params = 'context, tempo';
+                        body = `    context.page.espera_segundos(int(tempo))`;
                     } else if (interaction.acao === 'espera_elemento') {
-                        params = 'context';
-                        body = `    context.page.esperar_elemento(Locators${slugify(feature.name, true)}.${locatorName})`;
+                        // Step aceita parâmetro de timeout
+                        params = 'context, timeout=10';
+                        body = `    context.page.esperar_elemento(Locators${slugify(feature.name, true)}.${locatorName}, int(timeout))`;
+                    } else if (interaction.acao === 'espera_nao_existe' || interaction.acao === 'espera_elemento_desaparecer') {
+                        // Step aceita parâmetro de timeout
+                        params = 'context, timeout=10';
+                        body = `    context.page.esperar_elemento_desaparecer(Locators${slugify(feature.name, true)}.${locatorName}, int(timeout))`;
                     } else if (interaction.acao === 'clica') {
                         params = 'context';
                         body = `    context.page.clicar(Locators${slugify(feature.name, true)}.${locatorName})`;
@@ -1377,9 +1478,9 @@ class Page${slugify(feature.name, true)}:
                         params = 'context';
                         body = `    # Implemente a ação '${interaction.acaoTexto || interaction.acao}' para o locator '${locatorName}'`;
                     }
-
                     stepsPy += `${decorator}('${frase}')\ndef ${funcName}(${params}):\n${body}\n\n`;
-                });
+                    i++;
+                }
             });
 
             stepsPy += `# Adicione outros steps conforme necessário, usando os métodos e locators definidos em pages.py\n`;
