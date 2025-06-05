@@ -515,65 +515,80 @@ function showUploadModal(nomeElemento, cssSelector, xpath, callback) {
     modal.className = 'gherkin-modal-content';
     // Título
     const title = document.createElement('div');
-    title.textContent = 'Upload de arquivo de exemplo';
+    title.textContent = 'Upload de arquivos de evidência';
     title.style.fontSize = '17px';
     title.style.color = '#0D47A1';
     title.style.textAlign = 'center';
     modal.appendChild(title);
-    // Nome do arquivo
-    const fileLabel = document.createElement('label');
-    fileLabel.textContent = 'Nome do arquivo de exemplo:';
-    fileLabel.style.fontWeight = 'bold';
-    fileLabel.style.marginBottom = '4px';
-    modal.appendChild(fileLabel);
-    const fileInput = document.createElement('input');
-    fileInput.type = 'text';
-    fileInput.placeholder = 'exemplo.pdf, imagem.png, etc.';
-    fileInput.style.width = '100%';
-    fileInput.style.padding = '7px';
-    fileInput.style.borderRadius = '5px';
-    fileInput.style.border = '1px solid #ccc';
-    fileInput.style.fontSize = '14px';
-    fileInput.value = '';
-    modal.appendChild(fileInput);
-    // Botões
-    const btns = document.createElement('div');
-    btns.style.display = 'flex';
-    btns.style.gap = '18px';
-    btns.style.marginTop = '12px';
-    const saveBtn = document.createElement('button');
-    saveBtn.textContent = 'Salvar';
-    saveBtn.style.background = '#007bff';
-    saveBtn.style.color = '#fff';
-    saveBtn.style.border = 'none';
-    saveBtn.style.borderRadius = '6px';
-    saveBtn.style.padding = '8px 22px';
-    saveBtn.style.fontSize = '15px';
-    saveBtn.style.fontWeight = 'bold';
-    saveBtn.style.cursor = 'pointer';
-    saveBtn.onclick = () => {
-        const nomeArquivo = fileInput.value.trim();
-        if (!nomeArquivo) {
-            showFeedback('Informe o nome do arquivo!', 'error');
+    // Lista dinâmica de arquivos
+    const filesContainer = document.createElement('div');
+    filesContainer.style.display = 'flex';
+    filesContainer.style.flexDirection = 'column';
+    filesContainer.style.gap = '8px';
+    filesContainer.style.width = '100%';
+    modal.appendChild(filesContainer);
+    // Função para adicionar campo
+    function addFileInput(value = '') {
+        const fileRow = document.createElement('div');
+        fileRow.style.display = 'flex';
+        fileRow.style.gap = '8px';
+        fileRow.style.alignItems = 'center';
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = 'Ex: evidencia_texto.txt';
+        input.value = value;
+        input.style.flex = '1';
+        input.autocomplete = 'off';
+        fileRow.appendChild(input);
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.textContent = 'Remover';
+        removeBtn.className = 'gherkin-btn gherkin-btn-danger';
+        removeBtn.onclick = () => {
+            filesContainer.removeChild(fileRow);
+        };
+        fileRow.appendChild(removeBtn);
+        filesContainer.appendChild(fileRow);
+    }
+    // Adiciona pelo menos um campo
+    addFileInput();
+    // Botão para adicionar mais arquivos
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.textContent = 'Adicionar outro arquivo';
+    addBtn.className = 'gherkin-btn gherkin-btn-success';
+    addBtn.onclick = () => addFileInput();
+    modal.appendChild(addBtn);
+    // Botões de ação
+    const actionsRow = document.createElement('div');
+    actionsRow.style.display = 'flex';
+    actionsRow.style.gap = '12px';
+    actionsRow.style.marginTop = '18px';
+    // Botão OK
+    const okBtn = document.createElement('button');
+    okBtn.type = 'button';
+    okBtn.textContent = 'OK';
+    okBtn.className = 'gherkin-btn gherkin-btn-main';
+    okBtn.onclick = () => {
+        const nomesArquivos = Array.from(filesContainer.querySelectorAll('input[type="text"]'))
+            .map(input => input.value.trim())
+            .filter(v => v);
+        if (nomesArquivos.length === 0) {
+            alert('Informe pelo menos um nome de arquivo!');
             return;
         }
+        callback(nomesArquivos);
         modalBg.remove();
-        if (typeof callback === 'function') callback(nomeArquivo);
     };
+    actionsRow.appendChild(okBtn);
+    // Botão Cancelar
     const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
     cancelBtn.textContent = 'Cancelar';
-    cancelBtn.style.background = '#dc3545';
-    cancelBtn.style.color = '#fff';
-    cancelBtn.style.border = 'none';
-    cancelBtn.style.borderRadius = '6px';
-    cancelBtn.style.padding = '8px 22px';
-    cancelBtn.style.fontSize = '15px';
-    cancelBtn.style.fontWeight = 'bold';
-    cancelBtn.style.cursor = 'pointer';
+    cancelBtn.className = 'gherkin-btn gherkin-btn-danger';
     cancelBtn.onclick = () => modalBg.remove();
-    btns.appendChild(saveBtn);
-    btns.appendChild(cancelBtn);
-    modal.appendChild(btns);
+    actionsRow.appendChild(cancelBtn);
+    modal.appendChild(actionsRow);
     modalBg.appendChild(modal);
     document.body.appendChild(modalBg);
 }

@@ -63,71 +63,87 @@ function debounce(func, wait) {
 function getCSSSelector(element) {
     if (!element || element.nodeType !== Node.ELEMENT_NODE) return null;
 
-    function buildSelector(el) {
-        let selector = el.tagName.toLowerCase();
-
-        if (el.id) {
-            selector += `#${el.id}`;
-            return selector;
+    // Prioridade: id único > data-testid > data-qa > name > formcontrolname > aria-label > data-pc-name > type > placeholder > classe única
+    const attrPriority = [
+        'id', 'data-testid', 'data-qa', 'name', 'formcontrolname', 'aria-label', 'data-pc-name', 'type', 'placeholder'
+    ];
+    for (const attr of attrPriority) {
+        const val = element.getAttribute && element.getAttribute(attr);
+        if (val && document.querySelectorAll(`[${attr}="${CSS.escape(val)}"]`).length === 1) {
+            return `${element.tagName.toLowerCase()}[${attr}="${val}"]`;
         }
-
-        if (el.className) {
-            const classes = el.className
-                .split(' ')
-                .filter(cls => cls.trim() !== '')
-                .map(cls => `.${cls}`)
-                .join('');
-            selector += classes;
-        }
-
-        const attributes = ['name', 'type', 'aria-label', 'data-pc-name'];
-        attributes.forEach(attr => {
-            if (el.hasAttribute(attr)) {
-                selector += `[${attr}="${el.getAttribute(attr)}"]`;
-            }
-        });
-
-        return selector;
     }
-
-    return buildSelector(element);
+    // Se tem id único
+    if (element.id && document.querySelectorAll(`#${CSS.escape(element.id)}`).length === 1) {
+        return `${element.tagName.toLowerCase()}#${element.id}`;
+    }
+    // Se tem classe única
+    if (element.className && typeof element.className === 'string') {
+        const classList = element.className.trim().split(/\s+/).filter(Boolean);
+        for (const cls of classList) {
+            if (document.querySelectorAll(`.${CSS.escape(cls)}`).length === 1) {
+                return `${element.tagName.toLowerCase()}.${cls}`;
+            }
+        }
+    }
+    // Fallback: monta caminho hierárquico curto
+    let path = element.tagName.toLowerCase();
+    let parent = element.parentElement;
+    let depth = 0;
+    while (parent && depth < 2) {
+        if (parent.id && document.querySelectorAll(`#${CSS.escape(parent.id)}`).length === 1) {
+            path = `${parent.tagName.toLowerCase()}#${parent.id} > ${path}`;
+            break;
+        }
+        parent = parent.parentElement;
+        depth++;
+    }
+    return path;
 }
 
 function getRobustXPath(element) {
     if (!element || element.nodeType !== Node.ELEMENT_NODE) return null;
 
+    // id único
     if (element.id && document.querySelectorAll(`#${CSS.escape(element.id)}`).length === 1) {
-        return `//*[@id='${element.id}']`;
+        return `//*[@id="${element.id}"]`;
     }
-
-    const attrs = ['data-testid', 'data-qa', 'name', 'aria-label', 'title'];
+    // name único
+    if (element.name && document.querySelectorAll(`[name="${CSS.escape(element.name)}"]`).length === 1) {
+        return `//*[@name="${element.name}"]`;
+    }
+    // Atributos customizados únicos
+    const attrs = [
+        'data-testid', 'data-qa', 'formcontrolname', 'aria-label', 'data-pc-name', 'placeholder', 'type', 'title', 'role', 'name'
+    ];
     for (const attr of attrs) {
-        const val = element.getAttribute(attr);
-        if (val && document.querySelectorAll(`[${attr}='${val}']`).length === 1) {
-            return `//*[@${attr}='${val}']`;
+        const val = element.getAttribute && element.getAttribute(attr);
+        if (val && document.querySelectorAll(`[${attr}="${CSS.escape(val)}"]`).length === 1) {
+            return `//${element.tagName.toLowerCase()}[@${attr}="${val}"]`;
         }
     }
-
-    let path = '';
-    let el = element;
-    while (el && el.nodeType === Node.ELEMENT_NODE && el !== document.body) {
-        let segment = el.tagName.toLowerCase();
-        for (const attr of attrs) {
-            const val = el.getAttribute(attr);
-            if (val && document.querySelectorAll(`[${attr}='${val}']`).length === 1) {
-                path = `//*[@${attr}='${val}']${path ? '/' + path : ''}`;
-                return path;
+    // Classe única
+    if (element.className && typeof element.className === 'string') {
+        const classList = element.className.trim().split(/\s+/).filter(Boolean);
+        for (const cls of classList) {
+            if (document.querySelectorAll(`.${CSS.escape(cls)}`).length === 1) {
+                return `//${element.tagName.toLowerCase()}[contains(concat(' ',normalize-space(@class),' '),' ${cls} ')]`;
             }
         }
-        const siblings = Array.from(el.parentNode.children).filter(e => e.tagName === el.tagName);
-        if (siblings.length > 1) {
-            const idx = siblings.indexOf(el) + 1;
-            segment += `[${idx}]`;
-        }
-        path = path ? `${segment}/${path}` : segment;
-        el = el.parentNode;
     }
-    return '//' + path;
+    // Caminho relativo curto (até 2 níveis de parent)
+    let path = element.tagName.toLowerCase();
+    let parent = element.parentElement;
+    let depth = 0;
+    while (parent && depth < 2) {
+        if (parent.id && document.querySelectorAll(`#${CSS.escape(parent.id)}`).length === 1) {
+            path = `${parent.tagName.toLowerCase()}[@id="${parent.id}"]/${path}`;
+            break;
+        }
+        parent = parent.parentElement;
+        depth++;
+    }
+    return `//${path}`;
 }
 
 function isExtensionContextValid() {

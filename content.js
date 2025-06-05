@@ -519,12 +519,14 @@ document.addEventListener('click', (event) => {
             let nomeElemento = (event.target.getAttribute('aria-label') || event.target.getAttribute('name') || event.target.id || event.target.className || event.target.tagName).toString().trim();
             if (!nomeElemento) nomeElemento = event.target.tagName;
             if (typeof window.showUploadModal === 'function') {
-                window.showUploadModal(nomeElemento, cssSelector, xpath, (nomeArquivo) => {
-                    if (!nomeArquivo) return;
+                window.showUploadModal(nomeElemento, cssSelector, xpath, (nomesArquivos) => {
+                    if (!nomesArquivos || !Array.isArray(nomesArquivos) || nomesArquivos.length === 0) return;
                     getConfig((config) => {
-                        const template = config.templateUpload || 'When faz upload do arquivo "{arquivo}" no campo {elemento}';
+                        // Gera stepText com todos os arquivos
+                        const arquivosStr = nomesArquivos.join(', ');
+                        const template = config.templateUpload || 'When faz upload dos arquivos "{arquivos}" no campo {elemento}';
                         const stepText = template
-                            .replace('{arquivo}', nomeArquivo)
+                            .replace('{arquivos}', arquivosStr)
                             .replace('{elemento}', nomeElemento);
                         window.interactions.push({
                             step: 'When',
@@ -533,7 +535,7 @@ document.addEventListener('click', (event) => {
                             nomeElemento,
                             cssSelector,
                             xpath,
-                            nomeArquivo,
+                            nomesArquivos,
                             stepText,
                             timestamp: Date.now()
                         });
@@ -1247,59 +1249,129 @@ class Page${slugify(feature.name, true)}:
             print(f"[ERRO] Falha ao acessar URL '{url}': {e}")
             raise
 
-    def clicar(self, locator):
+    def clicar(self, locator, tentativas=3, espera=1):
         """
-        Clica no elemento identificado pelo locator.
+        Clica no elemento identificado pelo locator, com retry automático em caso de StaleElementReferenceException e espera explícita para estar clicável.
+        tentativas: número de tentativas antes de falhar.
+        espera: tempo (segundos) entre as tentativas.
         """
-        try:
-            self.driver.find_element(*locator).click()
-            print(f"[INFO] Clique realizado com sucesso no elemento {locator}.")
-        except (NoSuchElementException, ElementNotInteractableException) as e:
-            print(f"[ERRO] Falha ao clicar no elemento {locator}: {e}")
-            raise
+        from selenium.common.exceptions import StaleElementReferenceException
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
+        tentativa = 0
+        ultimo_erro = None
+        while tentativa < tentativas:
+            try:
+                WebDriverWait(self.driver, self.default_timeout).until(EC.element_to_be_clickable(locator))
+                self.driver.find_element(*locator).click()
+                print(f"[INFO] Clique realizado com sucesso no elemento {locator}.")
+                return
+            except StaleElementReferenceException as e:
+                print(f"[WARN] StaleElementReferenceException ao clicar no elemento {locator}: {e}. Tentando novamente ({tentativa+1}/{tentativas})...")
+                import time
+                time.sleep(espera)
+                tentativa += 1
+                ultimo_erro = e
+            except (NoSuchElementException, ElementNotInteractableException) as e:
+                print(f"[ERRO] Falha ao clicar no elemento {locator}: {e}")
+                raise
+            except Exception as e:
+                print(f"[ERRO] Erro inesperado ao clicar no elemento {locator}: {e}")
+                raise
+        raise Exception(f"Não foi possível clicar no elemento {locator} após {tentativas} tentativas devido a StaleElementReferenceException. Último erro: {ultimo_erro}")
 
-    def preencher(self, locator, valor):
+    def preencher(self, locator, valor, tentativas=3, espera=1):
         """
-        Preenche o campo identificado pelo locator com o valor informado.
+        Preenche o campo identificado pelo locator com o valor informado, com retry automático em caso de StaleElementReferenceException e espera explícita para estar visível.
         """
-        try:
-            el = self.driver.find_element(*locator)
-            el.clear()
-            el.send_keys(valor)
-            print(f"[INFO] Preenchimento do campo {locator} com valor '{valor}' realizado com sucesso.")
-        except NoSuchElementException as e:
-            print(f"[ERRO] Elemento {locator} não encontrado: {e}")
-            raise
-        except ElementNotInteractableException as e:
-            print(f"[ERRO] Elemento {locator} não interagível: {e}")
-            raise
-        except Exception as e:
-            print(f"[ERRO] Erro inesperado ao preencher {locator}: {e}")
-            raise
+        from selenium.common.exceptions import StaleElementReferenceException
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
+        import time
+        tentativa = 0
+        ultimo_erro = None
+        while tentativa < tentativas:
+            try:
+                WebDriverWait(self.driver, self.default_timeout).until(EC.visibility_of_element_located(locator))
+                el = self.driver.find_element(*locator)
+                el.clear()
+                el.send_keys(valor)
+                print(f"[INFO] Preenchimento do campo {locator} com valor '{valor}' realizado com sucesso.")
+                return
+            except StaleElementReferenceException as e:
+                print(f"[WARN] StaleElementReferenceException ao preencher o campo {locator}: {e}. Tentando novamente ({tentativa+1}/{tentativas})...")
+                time.sleep(espera)
+                tentativa += 1
+                ultimo_erro = e
+            except NoSuchElementException as e:
+                print(f"[ERRO] Elemento {locator} não encontrado: {e}")
+                raise
+            except ElementNotInteractableException as e:
+                print(f"[ERRO] Elemento {locator} não interagível: {e}")
+                raise
+            except Exception as e:
+                print(f"[ERRO] Erro inesperado ao preencher {locator}: {e}")
+                raise
+        raise Exception(f"Não foi possível preencher o campo {locator} após {tentativas} tentativas devido a StaleElementReferenceException. Último erro: {ultimo_erro}")
 
-    def selecionar(self, locator, valor):
+    def selecionar(self, locator, valor, tentativas=3, espera=1):
         """
-        Seleciona o valor informado em um campo select identificado pelo locator.
+        Seleciona o valor informado em um campo select identificado pelo locator, com retry automático em caso de StaleElementReferenceException e espera explícita para estar presente.
         """
-        try:
-            from selenium.webdriver.support.ui import Select
-            select = Select(self.driver.find_element(*locator))
-            select.select_by_visible_text(valor)
-            print(f"[INFO] Seleção do valor '{valor}' realizada com sucesso em {locator}.")
-        except (NoSuchElementException, ElementNotInteractableException) as e:
-            print(f"[ERRO] Falha ao selecionar valor '{valor}' em {locator}: {e}")
-            raise
+        from selenium.common.exceptions import StaleElementReferenceException
+        from selenium.webdriver.support.ui import WebDriverWait, Select
+        from selenium.webdriver.support import expected_conditions as EC
+        import time
+        tentativa = 0
+        ultimo_erro = None
+        while tentativa < tentativas:
+            try:
+                WebDriverWait(self.driver, self.default_timeout).until(EC.presence_of_element_located(locator))
+                select = Select(self.driver.find_element(*locator))
+                select.select_by_visible_text(valor)
+                print(f"[INFO] Seleção do valor '{valor}' realizada com sucesso em {locator}.")
+                return
+            except StaleElementReferenceException as e:
+                print(f"[WARN] StaleElementReferenceException ao selecionar valor '{valor}' em {locator}: {e}. Tentando novamente ({tentativa+1}/{tentativas})...")
+                time.sleep(espera)
+                tentativa += 1
+                ultimo_erro = e
+            except (NoSuchElementException, ElementNotInteractableException) as e:
+                print(f"[ERRO] Falha ao selecionar valor '{valor}' em {locator}: {e}")
+                raise
+            except Exception as e:
+                print(f"[ERRO] Erro inesperado ao selecionar valor '{valor}' em {locator}: {e}")
+                raise
+        raise Exception(f"Não foi possível selecionar o valor '{valor}' em {locator} após {tentativas} tentativas devido a StaleElementReferenceException. Último erro: {ultimo_erro}")
 
-    def upload_arquivo(self, locator, caminho_arquivo):
+    def upload_arquivo(self, locator, caminho_arquivo, tentativas=3, espera=1):
         """
-        Realiza upload de arquivo no campo identificado pelo locator.
+        Realiza upload de arquivo no campo identificado pelo locator, com retry automático em caso de StaleElementReferenceException e espera explícita para estar visível.
         """
-        try:
-            self.driver.find_element(*locator).send_keys(caminho_arquivo)
-            print(f"[INFO] Upload do arquivo '{caminho_arquivo}' realizado com sucesso em {locator}.")
-        except (NoSuchElementException, ElementNotInteractableException) as e:
-            print(f"[ERRO] Falha ao fazer upload do arquivo '{caminho_arquivo}' em {locator}: {e}")
-            raise
+        from selenium.common.exceptions import StaleElementReferenceException
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
+        import time
+        tentativa = 0
+        ultimo_erro = None
+        while tentativa < tentativas:
+            try:
+                WebDriverWait(self.driver, self.default_timeout).until(EC.visibility_of_element_located(locator))
+                self.driver.find_element(*locator).send_keys(caminho_arquivo)
+                print(f"[INFO] Upload do arquivo '{caminho_arquivo}' realizado com sucesso em {locator}.")
+                return
+            except StaleElementReferenceException as e:
+                print(f"[WARN] StaleElementReferenceException ao fazer upload do arquivo '{caminho_arquivo}' em {locator}: {e}. Tentando novamente ({tentativa+1}/{tentativas})...")
+                time.sleep(espera)
+                tentativa += 1
+                ultimo_erro = e
+            except (NoSuchElementException, ElementNotInteractableException) as e:
+                print(f"[ERRO] Falha ao fazer upload do arquivo '{caminho_arquivo}' em {locator}: {e}")
+                raise
+            except Exception as e:
+                print(f"[ERRO] Erro inesperado ao fazer upload do arquivo '{caminho_arquivo}' em {locator}: {e}")
+                raise
+        raise Exception(f"Não foi possível fazer upload do arquivo '{caminho_arquivo}' em {locator} após {tentativas} tentativas devido a StaleElementReferenceException. Último erro: {ultimo_erro}")
 
     def esperar_elemento(self, locator, timeout=None):
         """
@@ -1362,11 +1434,12 @@ class Page${slugify(feature.name, true)}:
 
             // --- steps.py gerado automaticamente e dinamicamente ---
             function getLocatorName(interaction) {
-                // Mesmo padrão do locatorSet
+                // Mesmo padrão do locatorSet, agora substitui hífens por underscores
                 let locatorName = '';
                 if (interaction.nomeElemento) {
                     locatorName = interaction.nomeElemento
                         .split('|')[0]
+                        .replace(/-/g, '_') // substitui hífens por underscores
                         .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
                         .replace(/[^a-zA-Z0-9_]/g, '_')
                         .replace(/_+/g, '_')
@@ -1483,8 +1556,13 @@ class Page${slugify(feature.name, true)}:
                     else decorator = '@when';
                     funcName = `step_${interaction.acao}_${locatorName}_${cIdx}_${i}`;
                     if (interaction.acao === 'upload') {
-                        params = 'context, arquivo';
-                        body = `    print(f"[STEP] Iniciando: ${funcName} (arquivo={arquivo})")\n    try:\n        if not hasattr(context, "driver") or context.driver is None:\n            raise Exception('O context.driver não está inicializado. Verifique o ambiente de execução do Selenium.')\n        if not hasattr(context, "page"):\n            context.page = Page${slugify(feature.name, true)}(context.driver)\n        context.page.upload_arquivo(Locators${slugify(feature.name, true)}.${locatorName}, arquivo)\n        print(f"[STEP] Sucesso: ${funcName}")\n    except Exception as e:\n        print(f"[ERRO] Falha no step ${funcName}: {e}")\n        raise`;
+                        if (Array.isArray(interaction.nomesArquivos) && interaction.nomesArquivos.length > 1) {
+                            params = 'context';
+                            body = `    print(f"[STEP] Iniciando: ${funcName} (arquivos={getattr(context, 'nomes_arquivos', None)})")\n    try:\n        if not hasattr(context, "driver") or context.driver is None:\n            raise Exception('O context.driver não está inicializado. Verifique o ambiente de execução do Selenium.')\n        if not hasattr(context, "page"):\n            context.page = Page${slugify(feature.name, true)}(context.driver)\n        nomes_arquivos = getattr(context, 'nomes_arquivos', ${JSON.stringify(interaction.nomesArquivos)})\n        if not nomes_arquivos:\n            nomes_arquivos = ${JSON.stringify(interaction.nomesArquivos)}\n        for arquivo in nomes_arquivos:\n            context.page.upload_arquivo(Locators${slugify(feature.name, true)}.${locatorName}, arquivo)\n            print(f"[STEP] Upload realizado: {arquivo}")\n        print(f"[STEP] Sucesso: ${funcName}")\n    except Exception as e:\n        print(f"[ERRO] Falha no step ${funcName}: {e}")\n        raise`;
+                        } else {
+                            params = 'context, arquivo';
+                            body = `    print(f"[STEP] Iniciando: ${funcName} (arquivo={arquivo})")\n    try:\n        if not hasattr(context, "driver") or context.driver is None:\n            raise Exception('O context.driver não está inicializado. Verifique o ambiente de execução do Selenium.')\n        if not hasattr(context, "page"):\n            context.page = Page${slugify(feature.name, true)}(context.driver)\n        context.page.upload_arquivo(Locators${slugify(feature.name, true)}.${locatorName}, arquivo)\n        print(f"[STEP] Sucesso: ${funcName}")\n    except Exception as e:\n        print(f"[ERRO] Falha no step ${funcName}: {e}")\n        raise`;
+                        }
                     } else if (interaction.acao === 'espera_segundos') {
                         // Step aceita parâmetro de tempo
                         params = 'context, tempo';
