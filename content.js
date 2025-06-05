@@ -1176,9 +1176,17 @@ Esta feature cobre o(s) seguinte(s) cenário(s):\n
                     if (interaction.cssSelector) {
                         let locatorName = '';
                         if (interaction.nomeElemento) {
-                            locatorName = interaction.nomeElemento.split('|')[0].trim().replace(/[^a-zA-Z0-9_]/g, '_').replace(/^_+|_+$/g, '');
+                            // Remove acentos, espaços, caracteres especiais e força snake_case
+                            locatorName = interaction.nomeElemento
+                                .split('|')[0]
+                                .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
+                                .replace(/[^a-zA-Z0-9_]/g, '_') // só letras, números e _
+                                .replace(/_+/g, '_') // múltiplos _ para um só
+                                .replace(/^_+|_+$/g, '') // remove _ no início/fim
+                                .replace(/^[0-9]+/, '') // não começa com número
+                                .toUpperCase(); // padrão: UPPERCASE
                         }
-                        if (!locatorName) locatorName = 'ELEMENTO_' + Math.random().toString(36).substring(2, 8);
+                        if (!locatorName) locatorName = 'ELEMENTO_' + Math.random().toString(36).substring(2, 8).toUpperCase();
                         let baseName = locatorName;
                         let count = 1;
                         while (locatorSet.has(locatorName)) {
@@ -1199,8 +1207,10 @@ Esta feature cobre o(s) seguinte(s) cenário(s):\n
 Page Object Model (POM) para a feature "${feature.name}".
 Contém classes de locators e métodos de interação para uso nos steps do Behave.
 Inclui tratamento de exceções para maior robustez.
+Timeouts parametrizáveis e configuráveis globalmente.
 """
 
+import os
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, TimeoutException, ElementNotInteractableException
 
@@ -1218,11 +1228,13 @@ class Page${slugify(feature.name, true)}:
     Classe de Page Object para interações genéricas da feature "${feature.name}".
     """
 
-    def __init__(self, driver):
+    def __init__(self, driver, default_timeout=10):
         """
-        Inicializa o Page Object com o driver do Selenium.
+        Inicializa o Page Object com o driver do Selenium e timeout padrão.
+        O timeout padrão pode ser sobrescrito por variável de ambiente SELENIUM_TIMEOUT.
         """
         self.driver = driver
+        self.default_timeout = int(os.getenv("SELENIUM_TIMEOUT", default_timeout))
 
     def acessar_url(self, url):
         """
@@ -1289,10 +1301,12 @@ class Page${slugify(feature.name, true)}:
             print(f"[ERRO] Falha ao fazer upload do arquivo '{caminho_arquivo}' em {locator}: {e}")
             raise
 
-    def esperar_elemento(self, locator, timeout=10):
+    def esperar_elemento(self, locator, timeout=None):
         """
         Aguarda até que o elemento esteja presente na tela.
+        O timeout pode ser informado no método ou será usado o padrão da classe.
         """
+        timeout = int(timeout) if timeout is not None else self.default_timeout
         try:
             from selenium.webdriver.support.ui import WebDriverWait
             from selenium.webdriver.support import expected_conditions as EC
@@ -1302,10 +1316,12 @@ class Page${slugify(feature.name, true)}:
             print(f"[ERRO] Timeout ao esperar elemento {locator}: {e}")
             raise
 
-    def esperar_elemento_desaparecer(self, locator, timeout=10):
+    def esperar_elemento_desaparecer(self, locator, timeout=None):
         """
         Aguarda até que o elemento desapareça da tela.
+        O timeout pode ser informado no método ou será usado o padrão da classe.
         """
+        timeout = int(timeout) if timeout is not None else self.default_timeout
         try:
             from selenium.webdriver.support.ui import WebDriverWait
             from selenium.webdriver.support import expected_conditions as EC
@@ -1327,10 +1343,11 @@ class Page${slugify(feature.name, true)}:
             print(f"[INFO] Elemento {locator} não existe na página.")
             return False
 
-    def espera_segundos(self, tempo):
+    def espera_segundos(self, tempo=None):
         """
-        Aguarda o tempo informado em segundos.
+        Aguarda o tempo informado em segundos (ou o timeout padrão se não informado).
         """
+        tempo = int(tempo) if tempo is not None else self.default_timeout
         import time
         print(f"[INFO] Esperando {tempo} segundos...")
         time.sleep(tempo)
@@ -1348,9 +1365,16 @@ class Page${slugify(feature.name, true)}:
                 // Mesmo padrão do locatorSet
                 let locatorName = '';
                 if (interaction.nomeElemento) {
-                    locatorName = interaction.nomeElemento.split('|')[0].trim().replace(/[^a-zA-Z0-9_]/g, '_').replace(/^_+|_+$/g, '');
+                    locatorName = interaction.nomeElemento
+                        .split('|')[0]
+                        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                        .replace(/[^a-zA-Z0-9_]/g, '_')
+                        .replace(/_+/g, '_')
+                        .replace(/^_+|_+$/g, '')
+                        .replace(/^[0-9]+/, '')
+                        .toUpperCase();
                 }
-                if (!locatorName) locatorName = 'ELEMENTO_' + Math.random().toString(36).substring(2, 8);
+                if (!locatorName) locatorName = 'ELEMENTO_' + Math.random().toString(36).substring(2, 8).toUpperCase();
                 return locatorName;
             }
 
@@ -1385,9 +1409,9 @@ class Page${slugify(feature.name, true)}:
                             j++;
                         }
                         if (group.length > 1 && !datatableStepEmitted) {
-                            // Step único para DataTable, com validação e comentários
+                            // Step único para DataTable, com validação, prints e tratamento de exceções
                             stepsPy += `# Step que preenche múltiplos campos de uma tabela Gherkin usando DataTable\n`;
-                            stepsPy += `@when('preencho os campos da tabela:')\ndef step_preencho_campos_tabela(context):\n    """Preenche múltiplos campos usando DataTable do Gherkin.\n    Cada linha da tabela deve conter as colunas 'Campo' e 'Valor'.\n    Se o campo não existir nos locators, lança uma exceção para facilitar o debug.\n    """\n    for row in context.table:\n        campo = row['Campo']\n        valor = row['Valor']\n        try:\n            locator = getattr(Locators${slugify(feature.name, true)}, campo.replace(' ', '_'))\n        except AttributeError:\n            raise Exception(f"Locator não encontrado para o campo: {campo}")\n        context.page.preencher(locator, valor)\n\n`;
+                            stepsPy += `@when('preencho os campos da tabela:')\ndef step_preencho_campos_tabela(context):\n    """Preenche múltiplos campos usando DataTable do Gherkin.\n    Cada linha da tabela deve conter as colunas 'Campo' e 'Valor'.\n    Se o campo não existir nos locators, lança uma exceção para facilitar o debug.\n    """\n    print('[STEP] Iniciando: step_preencho_campos_tabela')\n    try:\n        for row in context.table:\n            campo = row['Campo']\n            valor = row['Valor']\n            try:\n                locator = getattr(Locators${slugify(feature.name, true)}, campo.replace(' ', '_').upper())\n            except AttributeError:\n                raise Exception(f"Locator não encontrado para o campo: {campo}")\n            context.page.preencher(locator, valor)\n        print('[STEP] Sucesso: step_preencho_campos_tabela')\n    except Exception as e:\n        print(f'[ERRO] Falha no step step_preencho_campos_tabela: {e}')\n        raise\n\n`;
                             datatableStepEmitted = true;
                             i = j;
                             continue;
@@ -1405,11 +1429,16 @@ class Page${slugify(feature.name, true)}:
                                 continue;
                             }
                             usedLocators.add(stepKey);
-                            let frase = item.stepText ? item.stepText : `o usuário preenche o campo ${item.nomeElemento ? '"' + item.nomeElemento + '"' : ''} com "{valor}"`;
+                            // Step genérico parametrizado para preencher qualquer campo
+                            let frase = 'o usuário preenche o campo "{campo}" com "{valor}"';
                             let decorator = (item.step === 'Given') ? '@given' : (item.step === 'Then' ? '@then' : '@when');
-                            let funcName = `step_preenche_${locatorName}_${cIdx}_${i}`;
-                            stepsPy += `# Step que preenche um campo individual\n`;
-                            stepsPy += `${decorator}('${frase}')\ndef ${funcName}(context, valor):\n    """Preenche o campo '${item.nomeElemento}' com o valor informado."""\n    context.page.preencher(Locators${slugify(feature.name, true)}.${locatorName}, valor)\n\n`;
+                            let funcName = `step_preenche_generico`;
+                            if (!stepsPy.includes(`def ${funcName}(`)) {
+                                stepsPy += `# Step genérico que preenche qualquer campo informado por nome\n`;
+                                stepsPy += `${decorator}('${frase}')\ndef ${funcName}(context, campo, valor):\n    """Preenche o campo informado pelo nome (campo) com o valor informado."""\n    print(f"[STEP] Iniciando: ${funcName} (campo={campo}, valor={valor})")\n    try:\n        if not hasattr(context, "driver") or context.driver is None:\n            raise Exception('O context.driver não está inicializado. Verifique o ambiente de execução do Selenium.')\n        if not hasattr(context, "page"):\n            context.page = Page${slugify(feature.name, true)}(context.driver)\n        try:\n            locator = getattr(Locators${slugify(feature.name, true)}, campo.replace(' ', '_').upper())\n        except AttributeError:\n            raise Exception(f"Locator não encontrado para o campo: {campo}")\n        context.page.preencher(locator, valor)\n        print(f"[STEP] Sucesso: ${funcName}")\n    except Exception as e:\n        print(f"[ERRO] Falha no step ${funcName}: {e}")\n        raise\n\n`;
+                            }
+                            i++;
+                            continue;
                             i++;
                             continue;
                         } else {
@@ -1455,28 +1484,28 @@ class Page${slugify(feature.name, true)}:
                     funcName = `step_${interaction.acao}_${locatorName}_${cIdx}_${i}`;
                     if (interaction.acao === 'upload') {
                         params = 'context, arquivo';
-                        body = `    context.page.upload_arquivo(Locators${slugify(feature.name, true)}.${locatorName}, arquivo)`;
+                        body = `    print(f"[STEP] Iniciando: ${funcName} (arquivo={arquivo})")\n    try:\n        if not hasattr(context, "driver") or context.driver is None:\n            raise Exception('O context.driver não está inicializado. Verifique o ambiente de execução do Selenium.')\n        if not hasattr(context, "page"):\n            context.page = Page${slugify(feature.name, true)}(context.driver)\n        context.page.upload_arquivo(Locators${slugify(feature.name, true)}.${locatorName}, arquivo)\n        print(f"[STEP] Sucesso: ${funcName}")\n    except Exception as e:\n        print(f"[ERRO] Falha no step ${funcName}: {e}")\n        raise`;
                     } else if (interaction.acao === 'espera_segundos') {
                         // Step aceita parâmetro de tempo
                         params = 'context, tempo';
-                        body = `    context.page.espera_segundos(int(tempo))`;
+                        body = `    print(f"[STEP] Iniciando: ${funcName} (tempo={tempo})")\n    try:\n        if not hasattr(context, "driver") or context.driver is None:\n            raise Exception('O context.driver não está inicializado. Verifique o ambiente de execução do Selenium.')\n        if not hasattr(context, "page"):\n            context.page = Page${slugify(feature.name, true)}(context.driver)\n        context.page.espera_segundos(int(tempo))\n        print(f"[STEP] Sucesso: ${funcName}")\n    except Exception as e:\n        print(f"[ERRO] Falha no step ${funcName}: {e}")\n        raise`;
                     } else if (interaction.acao === 'espera_elemento') {
                         // Step aceita parâmetro de timeout
                         params = 'context, timeout=10';
-                        body = `    context.page.esperar_elemento(Locators${slugify(feature.name, true)}.${locatorName}, int(timeout))`;
+                        body = `    print(f"[STEP] Iniciando: ${funcName} (timeout={timeout})")\n    try:\n        if not hasattr(context, "driver") or context.driver is None:\n            raise Exception('O context.driver não está inicializado. Verifique o ambiente de execução do Selenium.')\n        if not hasattr(context, "page"):\n            context.page = Page${slugify(feature.name, true)}(context.driver)\n        context.page.esperar_elemento(Locators${slugify(feature.name, true)}.${locatorName}, int(timeout))\n        print(f"[STEP] Sucesso: ${funcName}")\n    except Exception as e:\n        print(f"[ERRO] Falha no step ${funcName}: {e}")\n        raise`;
                     } else if (interaction.acao === 'espera_nao_existe' || interaction.acao === 'espera_elemento_desaparecer') {
                         // Step aceita parâmetro de timeout
                         params = 'context, timeout=10';
-                        body = `    context.page.esperar_elemento_desaparecer(Locators${slugify(feature.name, true)}.${locatorName}, int(timeout))`;
+                        body = `    print(f"[STEP] Iniciando: ${funcName} (timeout={timeout})")\n    try:\n        if not hasattr(context, "driver") or context.driver is None:\n            raise Exception('O context.driver não está inicializado. Verifique o ambiente de execução do Selenium.')\n        if not hasattr(context, "page"):\n            context.page = Page${slugify(feature.name, true)}(context.driver)\n        context.page.esperar_elemento_desaparecer(Locators${slugify(feature.name, true)}.${locatorName}, int(timeout))\n        print(f"[STEP] Sucesso: ${funcName}")\n    except Exception as e:\n        print(f"[ERRO] Falha no step ${funcName}: {e}")\n        raise`;
                     } else if (interaction.acao === 'clica') {
                         params = 'context';
-                        body = `    context.page.clicar(Locators${slugify(feature.name, true)}.${locatorName})`;
+                        body = `    print(f"[STEP] Iniciando: ${funcName}")\n    try:\n        if not hasattr(context, "driver") or context.driver is None:\n            raise Exception('O context.driver não está inicializado. Verifique o ambiente de execução do Selenium.')\n        if not hasattr(context, "page"):\n            context.page = Page${slugify(feature.name, true)}(context.driver)\n        context.page.clicar(Locators${slugify(feature.name, true)}.${locatorName})\n        print(f"[STEP] Sucesso: ${funcName}")\n    except Exception as e:\n        print(f"[ERRO] Falha no step ${funcName}: {e}")\n        raise`;
                     } else if (interaction.acao && interaction.acao.toLowerCase().includes('valida')) {
                         params = 'context';
-                        body = `    assert context.page.validar_existencia(Locators${slugify(feature.name, true)}.${locatorName})\n`;
+                        body = `    print(f"[STEP] Iniciando: ${funcName}")\n    try:\n        if not hasattr(context, "driver") or context.driver is None:\n            raise Exception('O context.driver não está inicializado. Verifique o ambiente de execução do Selenium.')\n        if not hasattr(context, "page"):\n            context.page = Page${slugify(feature.name, true)}(context.driver)\n        assert context.page.validar_existencia(Locators${slugify(feature.name, true)}.${locatorName})\n        print(f"[STEP] Sucesso: ${funcName}")\n    except Exception as e:\n        print(f"[ERRO] Falha no step ${funcName}: {e}")\n        raise\n`;
                     } else {
                         params = 'context';
-                        body = `    # Implemente a ação '${interaction.acaoTexto || interaction.acao}' para o locator '${locatorName}'`;
+                        body = `    print(f"[STEP] Iniciando: ${funcName}")\n    try:\n        # Implemente a ação '${interaction.acaoTexto || interaction.acao}' para o locator '${locatorName}'\n        print(f"[STEP] Sucesso: ${funcName}")\n    except Exception as e:\n        print(f"[ERRO] Falha no step ${funcName}: {e}")\n        raise`;
                     }
                     stepsPy += `${decorator}('${frase}')\ndef ${funcName}(${params}):\n${body}\n\n`;
                     i++;
