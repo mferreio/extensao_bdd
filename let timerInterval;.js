@@ -74,15 +74,25 @@ document.getElementById('finalize').addEventListener('click', () => {
             if (chrome.runtime.lastError) {
                 alert('Erro ao finalizar o registro: ' + chrome.runtime.lastError.message);
             } else {
-                chrome.storage.local.set({ interactions: response.interactions }, () => {
-                    alert('Registro finalizado. Voce pode exportar os cenarios.');
+                if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                    chrome.storage.local.set({ interactions: response.interactions }, () => {
+                        alert('Registro finalizado. Voce pode exportar os cenarios.');
+                        document.getElementById('play').disabled = false;
+                        document.getElementById('pause').disabled = true;
+                        document.getElementById('finalize').disabled = true;
+                        document.getElementById('export').disabled = false;
+                        document.getElementById('status').textContent = 'Status: Finalizado';
+                        stopTimer();
+                    });
+                } else {
+                    alert('Registro finalizado. Voce pode exportar os cenarios. (Sem persistência local)');
                     document.getElementById('play').disabled = false;
                     document.getElementById('pause').disabled = true;
                     document.getElementById('finalize').disabled = true;
                     document.getElementById('export').disabled = false;
                     document.getElementById('status').textContent = 'Status: Finalizado';
                     stopTimer();
-                });
+                }
             }
         });
     });

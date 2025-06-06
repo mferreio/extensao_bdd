@@ -2118,6 +2118,15 @@ driver.find_element(By.CSS_SELECTOR, "${interaction.cssSelector}").send_keys("/c
 }
 
 function initializePanelEvents(panel) {
+    // Garante que a função global de exportação aponte para a função correta do content.js
+    if (window.gherkin && typeof window.gherkin.exportSelectedFeatures === 'function') {
+        window.exportSelectedFeatures = window.gherkin.exportSelectedFeatures;
+    }
+    // Garante que a função global de exportação aponte para a função correta do content.js
+    if (window.gherkin && typeof window.gherkin.exportSelectedFeatures === 'function') {
+        window.exportSelectedFeatures = window.gherkin.exportSelectedFeatures;
+    }
+
     // Botões do cabeçalho
     const minimizeButton = panel.querySelector('#gherkin-minimize');
     const reopenButton = panel.querySelector('#gherkin-reopen');

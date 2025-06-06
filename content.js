@@ -876,9 +876,63 @@ function handleInputEvent(event) {
                     }
                     // 8. Tag amigável
                     if (!nomeElemento && target.tagName) {
-                        nomeElemento = target.tagName.toLowerCase();
+                    nomeElemento = target.tagName.toLowerCase();
+                }
+                nomeElemento = (nomeElemento || '').toString().trim();
+
+                // --- LÓGICA DE UNICIDADE ROBUSTA PARA CAMPOS EM TABELA ---
+                let parentSelector = '';
+                let parent = target.closest && (target.closest('tr') || target.closest('tbody') || target.closest('table'));
+                if (parent) {
+                    parentSelector = getCSSSelector(parent);
+                    // Índice da linha (sempre que possível)
+                    let rowIdx = null;
+                    if (parent.tagName === 'TR') {
+                        const allRows = Array.from(parent.parentElement ? parent.parentElement.children : []);
+                        rowIdx = allRows.indexOf(parent) + 1;
                     }
-                    nomeElemento = (nomeElemento || '').toString().trim();
+                    // Cabeçalho da coluna
+                    let colHeader = '';
+                    if (target.closest) {
+                        const td = target.closest('td,th');
+                        if (td && td.cellIndex !== undefined && td.cellIndex >= 0) {
+                            let table = td.closest('table');
+                            if (table) {
+                                let headerRow = null;
+                                if (table.tHead && table.tHead.rows.length > 0) {
+                                    headerRow = table.tHead.rows[0];
+                                } else {
+                                    headerRow = table.querySelector('tr');
+                                }
+                                if (headerRow) {
+                                    const ths = headerRow.querySelectorAll('th');
+                                    if (ths && ths.length > td.cellIndex) {
+                                        colHeader = ths[td.cellIndex].textContent.trim();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    // Padroniza nome: sempre inclui coluna e linha
+                    let nomeComposto = '';
+                    if (colHeader) {
+                        nomeComposto = `INPUT_${slugify(colHeader).toUpperCase()}`;
+                    } else {
+                        nomeComposto = `INPUT_${slugify(nomeElemento).toUpperCase()}`;
+                    }
+                    if (rowIdx) {
+                        nomeComposto += `_LINHA_${rowIdx}`;
+                    }
+                    // Se já existe outro campo com mesmo nome no mesmo parentSelector, adiciona sufixo incremental
+                    let similarCount = 0;
+                    if (window.interactions && Array.isArray(window.interactions)) {
+                        similarCount = window.interactions.filter(i => i.parentSelector === parentSelector && i.nomeElemento === nomeComposto).length;
+                    }
+                    if (similarCount > 0) {
+                        nomeComposto += `_${similarCount+1}`;
+                    }
+                    nomeElemento = nomeComposto;
+                }
                     let value = '';
                     if (typeof target.value !== 'undefined') {
                         value = target.value;
@@ -906,12 +960,7 @@ function handleInputEvent(event) {
                     ) {
                         return;
                     }
-                    // Busca o parentSelector (linha, tbody, table, etc)
-                    let parentSelector = '';
-                    let parent = target.closest && (target.closest('tr') || target.closest('tbody') || target.closest('table'));
-                    if (parent) {
-                        parentSelector = getCSSSelector(parent);
-                    }
+                    // parentSelector já definido acima
                     window.interactions.push({
                         step,
                         acao: 'preenche',
@@ -927,13 +976,97 @@ function handleInputEvent(event) {
                     if (typeof window.saveInteractionsToStorage === 'function') window.saveInteractionsToStorage();
                 };
             }
-            // Handler para keydown(Tab)
+            // Handler para keydown(Tab) - garante registro mesmo sem blur
             if (!window.__gherkinPreencheKeydownHandler) {
                 window.__gherkinPreencheKeydownHandler = function(ev) {
                     if (ev.key === 'Tab') {
-                        // Aguarda o valor ser atualizado após o Tab (blur)
+                        // Aguarda o valor ser atualizado após o Tab
                         setTimeout(() => {
-                            window.__gherkinPreencheBlurChangeHandler(ev);
+                            // Chama a lógica de registro diretamente, sem depender do blur
+                            if (!window.isRecording || window.isPaused) return;
+                            if (!isExtensionContextValid()) return;
+                            let target = ev.target;
+                            if (target.tagName === 'P-INPUTNUMBER' || (target.classList && target.classList.contains('p-inputnumber'))) {
+                                const input = target.querySelector('input.p-inputnumber-input, input.p-inputtext');
+                                if (input) target = input;
+                            }
+                            const cssSelector = getCSSSelector(target);
+                            const xpath = typeof getRobustXPath === 'function' ? getRobustXPath(target) : '';
+                            let nomeElemento = '';
+                            if (target.id) {
+                                const label = document.querySelector('label[for="' + target.id + '"]');
+                                if (label && label.textContent) {
+                                    nomeElemento = label.textContent.trim();
+                                }
+                            }
+                            if (!nomeElemento && target.closest) {
+                                const labelParent = target.closest('label');
+                                if (labelParent && labelParent.textContent) {
+                                    nomeElemento = labelParent.textContent.trim();
+                                }
+                            }
+                            if (!nomeElemento && target.getAttribute('aria-label')) {
+                                nomeElemento = target.getAttribute('aria-label').trim();
+                            }
+                            if (!nomeElemento && target.getAttribute('placeholder')) {
+                                nomeElemento = target.getAttribute('placeholder').trim();
+                            }
+                            if (!nomeElemento && target.getAttribute('name')) {
+                                nomeElemento = target.getAttribute('name').trim();
+                            }
+                            if (!nomeElemento && target.id && !/^([0-9_\-]+|input|field|campo)$/i.test(target.id)) {
+                                nomeElemento = target.id.trim();
+                            }
+                            if (!nomeElemento && typeof target.innerText === 'string' && target.innerText.trim().length > 2 && target.innerText.trim().length < 60) {
+                                nomeElemento = target.innerText.trim();
+                            }
+                            if (!nomeElemento && target.tagName) {
+                                nomeElemento = target.tagName.toLowerCase();
+                            }
+                            nomeElemento = (nomeElemento || '').toString().trim();
+                            let value = '';
+                            if (typeof target.value !== 'undefined') {
+                                value = target.value;
+                            } else if (typeof target.innerText !== 'undefined') {
+                                value = target.innerText;
+                            } else if (typeof target.textContent !== 'undefined') {
+                                value = target.textContent;
+                            }
+                            let step = 'Then';
+                            let offset = 0;
+                            if (window.interactions.length > 0 && window.interactions[0].acao === 'acessa_url') offset = 1;
+                            if (window.interactions.length === 0) step = 'Given';
+                            else if (window.interactions.length === 1 && offset === 0) step = 'When';
+                            else if (window.interactions.length === 1 && offset === 1) step = 'When';
+                            else if (window.interactions.length === 2 && offset === 1) step = 'Then';
+                            const last = window.interactions[window.interactions.length - 1];
+                            if (
+                                last &&
+                                last.acao === 'preenche' &&
+                                last.cssSelector === cssSelector &&
+                                last.nomeElemento === nomeElemento &&
+                                last.valorPreenchido === value
+                            ) {
+                                return;
+                            }
+                            let parentSelector = '';
+                            let parent = target.closest && (target.closest('tr') || target.closest('tbody') || target.closest('table'));
+                            if (parent) {
+                                parentSelector = getCSSSelector(parent);
+                            }
+                            window.interactions.push({
+                                step,
+                                acao: 'preenche',
+                                acaoTexto: 'Preencher',
+                                nomeElemento,
+                                cssSelector,
+                                xpath,
+                                valorPreenchido: value,
+                                parentSelector,
+                                timestamp: Date.now()
+                            });
+                            renderLogWithActions();
+                            if (typeof window.saveInteractionsToStorage === 'function') window.saveInteractionsToStorage();
                         }, 0);
                     }
                 };
@@ -1208,23 +1341,43 @@ Esta feature cobre o(s) seguinte(s) cenário(s):\n
             downloadFile(filename, readme);
 
 
-            // --- locatorSet e locatorMap ---
+            // Função para normalizar nomes de locator e textos do .feature (remove acentos, espaços, caracteres especiais, minúsculo)
+            function normalizeLocatorKey(str) {
+                return (str || '')
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-zA-Z0-9_]/g, '_')
+                    .replace(/_+/g, '_')
+                    .replace(/^_+|_+$/g, '')
+                    .replace(/^[0-9]+/, '')
+                    .toLowerCase();
+            }
+            function normalizeLocatorPart(str) {
+                return (str || '')
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-zA-Z0-9_]/g, '_')
+                    .replace(/_+/g, '_')
+                    .replace(/^_+|_+$/g, '')
+                    .replace(/^[0-9]+/, '')
+                    .toUpperCase();
+            }
+
             const locatorSet = new Set();
             const locatorMap = {};
+            const featureLocatorNameMap = {};
+            const normalizedFeatureKeys = new Map();
+
+            // 1º passo: gerar todos os locators normalmente, padronizando nomes e textos
             (feature.cenarios || []).forEach((cenario) => {
                 (cenario.interactions || []).forEach((interaction) => {
-                    if (interaction.cssSelector) {
-                        let locatorName = '';
-                        if (interaction.nomeElemento) {
-                            // Remove acentos, espaços, caracteres especiais e força snake_case
-                            locatorName = interaction.nomeElemento
-                                .split('|')[0]
-                                .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
-                                .replace(/[^a-zA-Z0-9_]/g, '_') // só letras, números e _
-                                .replace(/_+/g, '_') // múltiplos _ para um só
-                                .replace(/^_+|_+$/g, '') // remove _ no início/fim
-                                .replace(/^[0-9]+/, '') // não começa com número
-                                .toUpperCase(); // padrão: UPPERCASE
+                    if (interaction.cssSelector && interaction.nomeElemento) {
+                        // Usa a chave completa do .feature (incluindo texto após o pipe, se houver)
+                        const nomeFeatureCompleto = interaction.nomeElemento.trim();
+                        const nomeFeaturePadronizado = normalizeLocatorKey(nomeFeatureCompleto);
+                        // Para o nome do locator, inclui o texto após o pipe se existir
+                        let [parte1, parte2] = nomeFeatureCompleto.split('|').map(s => s.trim());
+                        let locatorName = normalizeLocatorPart(parte1);
+                        if (parte2) {
+                            locatorName += '_' + normalizeLocatorPart(parte2);
                         }
                         if (!locatorName) locatorName = 'ELEMENTO_' + Math.random().toString(36).substring(2, 8).toUpperCase();
                         let baseName = locatorName;
@@ -1235,14 +1388,80 @@ Esta feature cobre o(s) seguinte(s) cenário(s):\n
                         }
                         locatorSet.add(locatorName);
                         locatorMap[locatorName] = interaction.cssSelector;
+                        // Mapeia a chave padronizada do .feature para o nome do locator
+                        featureLocatorNameMap[nomeFeaturePadronizado] = locatorName;
+                        // Guarda o texto original para possível aviso de inconsistência
+                        if (!normalizedFeatureKeys.has(nomeFeaturePadronizado)) {
+                            normalizedFeatureKeys.set(nomeFeaturePadronizado, new Set());
+                        }
+                        normalizedFeatureKeys.get(nomeFeaturePadronizado).add(nomeFeatureCompleto);
                     }
                 });
             });
 
+            // Aviso de inconsistência: se o mesmo nome padronizado aparece com textos diferentes no .feature
+            const inconsistencias = [];
+            normalizedFeatureKeys.forEach((originais, key) => {
+                if (originais.size > 1) {
+                    inconsistencias.push(`# Atenção: O texto do .feature apresenta variações para o mesmo campo padronizado ('${key}'): ${Array.from(originais).join(', ')}`);
+                }
+            });
+
+            // 2º passo: garantir que todos os valores de featureLocatorNameMap existam em locatorSet (e locatorMap)
+            // 2º passo: garantir que todos os valores de featureLocatorNameMap existam em locatorSet (e locatorMap)
+            const missingLocators = [];
+            Object.entries(featureLocatorNameMap).forEach(([featureKey, locatorName]) => {
+                if (!locatorSet.has(locatorName)) {
+                    // Se não existe, cria um locator "falso" (evita erro de atributo ausente)
+                    locatorSet.add(locatorName);
+                    locatorMap[locatorName] = 'MISSING_LOCATOR';
+                    missingLocators.push(`${featureKey} → ${locatorName}`);
+                }
+            });
+            // Garante que todos os campos do .feature estejam no LOCATOR_MAP
+            Object.keys(normalizedFeatureKeys).forEach(featureKey => {
+                const locatorName = featureLocatorNameMap[featureKey];
+                if (!locatorMap[locatorName]) {
+                    locatorMap[locatorName] = 'MISSING_LOCATOR';
+                    missingLocators.push(`${featureKey} → ${locatorName}`);
+                }
+            });
+            // Adiciona aviso explícito se houver locators faltantes
+            let missingLocatorsWarning = '';
+            if (missingLocators.length > 0) {
+                missingLocatorsWarning = `# Atenção: Os seguintes campos do .feature não possuem locator definido e foram adicionados como 'MISSING_LOCATOR':\n#   ${missingLocators.join(', ')}\n`;
+                if (typeof console !== 'undefined') {
+                    console.warn(missingLocatorsWarning);
+                }
+            }
+
+            // --- Detecta ambiguidades de locator (mesmo seletor para nomes diferentes) ---
+            const selectorToNames = {};
+            Object.entries(locatorMap).forEach(([locatorName, cssSelector]) => {
+                if (!selectorToNames[cssSelector]) selectorToNames[cssSelector] = [];
+                selectorToNames[cssSelector].push(locatorName);
+            });
+            const ambiguousLocators = Object.entries(selectorToNames)
+                .filter(([cssSelector, names]) => names.length > 1)
+                .map(([cssSelector, names]) => {
+                    return `# Atenção: O seletor '${cssSelector}' está sendo usado para múltiplos campos: ${names.join(', ')}`;
+                });
+
+            // --- Detecta locators genéricos (ex: apenas 'div', 'span', etc) ---
+            const genericTags = ['div', 'span', 'button', 'input', 'a', 'p', 'section', 'article', 'header', 'footer', 'main', 'form'];
+            const genericLocators = Object.entries(locatorMap)
+                .filter(([locatorName, cssSelector]) => {
+                    // Considera genérico se o seletor for apenas a tag, sem classes, ids ou atributos
+                    return genericTags.includes(cssSelector.trim().toLowerCase());
+                })
+                .map(([locatorName, cssSelector]) => {
+                    return `# Atenção: O locator '${locatorName}' está usando um seletor genérico ('${cssSelector}'). Torne-o mais específico usando uma classe ou atributo exclusivo.`;
+                });
+
             // --- pages.py com docstrings, comentários e tratamento de exceções ---
             const featureSlug = slugify(feature.name, false);
             const pagesPy = `# ${featureSlug}_pages.py gerado automaticamente para a feature "${feature.name}"
-# -*- coding: utf-8 -*-
+ # -*- coding: utf-8 -*-
 """
 Page Object Model (POM) para a feature "${feature.name}".
 Contém classes de locators e métodos de interação para uso nos steps do Behave.
@@ -1250,9 +1469,13 @@ Inclui tratamento de exceções para maior robustez.
 Timeouts parametrizáveis e configuráveis globalmente.
 """
 
+# IMPORTS AGRUPADOS E COMPLETOS
 import os
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException, TimeoutException, ElementNotInteractableException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException, ElementNotInteractableException, StaleElementReferenceException
+from selenium.webdriver.support.ui import WebDriverWait, Select
+from selenium.webdriver.support import expected_conditions as EC
+import time
 
 class Locators${slugify(feature.name, true)}:
     """
@@ -1263,6 +1486,11 @@ ${locatorSet.size === 0
     : Array.from(locatorSet).map(key => `    ${key} = (By.CSS_SELECTOR, '${locatorMap[key]}')`).join('\n')
 }
 
+
+${ambiguousLocators.length > 0 ? ambiguousLocators.join('\n') + '\n' : ''}
+${genericLocators.length > 0 ? genericLocators.join('\n') + '\n' : ''}
+
+
 class Page${slugify(feature.name, true)}:
     """
     Classe de Page Object para interações genéricas da feature "${feature.name}".
@@ -1272,9 +1500,14 @@ class Page${slugify(feature.name, true)}:
         """
         Inicializa o Page Object com o driver do Selenium e timeout padrão.
         O timeout padrão pode ser sobrescrito por variável de ambiente SELENIUM_TIMEOUT.
+        Também torna todos os locators disponíveis como atributos da instância.
         """
         self.driver = driver
         self.default_timeout = int(os.getenv("SELENIUM_TIMEOUT", default_timeout))
+        # Torna todos os locators disponíveis como atributos da instância
+        for attr in dir(Locators${slugify(feature.name, true)}):
+            if attr.isupper():
+                setattr(self, attr, getattr(Locators${slugify(feature.name, true)}, attr))
 
     def acessar_url(self, url):
         """
@@ -1293,9 +1526,6 @@ class Page${slugify(feature.name, true)}:
         tentativas: número de tentativas antes de falhar.
         espera: tempo (segundos) entre as tentativas.
         """
-        from selenium.common.exceptions import StaleElementReferenceException
-        from selenium.webdriver.support.ui import WebDriverWait
-        from selenium.webdriver.support import expected_conditions as EC
         tentativa = 0
         ultimo_erro = None
         while tentativa < tentativas:
@@ -1306,7 +1536,6 @@ class Page${slugify(feature.name, true)}:
                 return
             except StaleElementReferenceException as e:
                 print(f"[WARN] StaleElementReferenceException ao clicar no elemento {locator}: {e}. Tentando novamente ({tentativa+1}/{tentativas})...")
-                import time
                 time.sleep(espera)
                 tentativa += 1
                 ultimo_erro = e
@@ -1322,10 +1551,6 @@ class Page${slugify(feature.name, true)}:
         """
         Preenche o campo identificado pelo locator com o valor informado, com retry automático em caso de StaleElementReferenceException e espera explícita para estar visível.
         """
-        from selenium.common.exceptions import StaleElementReferenceException
-        from selenium.webdriver.support.ui import WebDriverWait
-        from selenium.webdriver.support import expected_conditions as EC
-        import time
         tentativa = 0
         ultimo_erro = None
         while tentativa < tentativas:
@@ -1352,15 +1577,10 @@ class Page${slugify(feature.name, true)}:
                 raise
         raise Exception(f"Não foi possível preencher o campo {locator} após {tentativas} tentativas devido a StaleElementReferenceException. Último erro: {ultimo_erro}")
 
-
     def selecionar(self, locator, valor, tentativas=3, espera=1):
         """
         Seleciona o valor informado em um campo select identificado pelo locator, com retry automático em caso de StaleElementReferenceException e espera explícita para estar presente.
         """
-        from selenium.common.exceptions import StaleElementReferenceException
-        from selenium.webdriver.support.ui import WebDriverWait, Select
-        from selenium.webdriver.support import expected_conditions as EC
-        import time
         tentativa = 0
         ultimo_erro = None
         while tentativa < tentativas:
@@ -1383,15 +1603,10 @@ class Page${slugify(feature.name, true)}:
                 raise
         raise Exception(f"Não foi possível selecionar o valor '{valor}' em {locator} após {tentativas} tentativas devido a StaleElementReferenceException. Último erro: {ultimo_erro}")
 
-
     def upload_arquivo(self, locator, caminho_arquivo, tentativas=3, espera=1):
         """
         Realiza upload de arquivo no campo identificado pelo locator, com retry automático em caso de StaleElementReferenceException e espera explícita para estar visível.
         """
-        from selenium.common.exceptions import StaleElementReferenceException
-        from selenium.webdriver.support.ui import WebDriverWait
-        from selenium.webdriver.support import expected_conditions as EC
-        import time
         tentativa = 0
         ultimo_erro = None
         while tentativa < tentativas:
@@ -1413,7 +1628,6 @@ class Page${slugify(feature.name, true)}:
                 raise
         raise Exception(f"Não foi possível fazer upload do arquivo '{caminho_arquivo}' em {locator} após {tentativas} tentativas devido a StaleElementReferenceException. Último erro: {ultimo_erro}")
 
-
     def esperar_elemento(self, locator, timeout=None):
         """
         Aguarda até que o elemento esteja presente na tela.
@@ -1421,8 +1635,6 @@ class Page${slugify(feature.name, true)}:
         """
         timeout = int(timeout) if timeout is not None else self.default_timeout
         try:
-            from selenium.webdriver.support.ui import WebDriverWait
-            from selenium.webdriver.support import expected_conditions as EC
             WebDriverWait(self.driver, timeout).until(EC.presence_of_element_located(locator))
             print(f"[INFO] Elemento {locator} apareceu na tela (timeout={timeout}s).")
         except TimeoutException as e:
@@ -1436,8 +1648,6 @@ class Page${slugify(feature.name, true)}:
         """
         timeout = int(timeout) if timeout is not None else self.default_timeout
         try:
-            from selenium.webdriver.support.ui import WebDriverWait
-            from selenium.webdriver.support import expected_conditions as EC
             WebDriverWait(self.driver, timeout).until(EC.invisibility_of_element_located(locator))
             print(f"[INFO] Elemento {locator} desapareceu da tela (timeout={timeout}s).")
         except TimeoutException as e:
@@ -1445,10 +1655,18 @@ class Page${slugify(feature.name, true)}:
             raise
 
 `;
-            downloadFile(`pages_${featureSlug}.py`, pagesPy);
+            downloadFile(`${featureSlug}_pages.py`, pagesPy);
 
 
             // --- steps.py com tratamento de exceções e logs aprimorados ---
+
+            // --- Gerar dicionário de mapeamento de locators ---
+            // O dicionário mapeia o nome do elemento (como aparece no .feature) para o nome da constante do locator
+            const locatorMapEntries = Object.entries(featureLocatorNameMap)
+                .filter(([nomeFeature, locatorName]) => locatorSet.has(locatorName))
+                .map(([nomeFeature, locatorName]) => `    ${JSON.stringify(nomeFeature)}: "${locatorName}"`)
+                .join(',\n');
+
             const stepsPy = `# ${featureSlug}_steps.py gerado automaticamente para a feature "${feature.name}"
 # -*- coding: utf-8 -*-
 """
@@ -1460,12 +1678,18 @@ Inclui tratamento de exceções e logs aprimorados.
 from behave import given, when, then
 import logging
 
+# Mapeamento do texto do .feature para o nome do locator
+LOCATOR_MAP = {
+${locatorMapEntries}
+}
+
 # Configuração do logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 handler = logging.FileHandler('gherkin_tests.log')
 handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-logger.addHandler(handler)
+if not logger.handlers:
+    logger.addHandler(handler)
 
 @given('que o usuário acessa a página "{url}"')
 def step_acessa_url(context, url):
@@ -1485,10 +1709,17 @@ def step_clica_elemento(context, elemento):
     Passo quando para clicar em um elemento.
     """
     try:
-        locator = getattr(context.page, f"LOC_{elemento.upper()}", None)
+        locator_name = LOCATOR_MAP.get(elemento)
+        locator = getattr(context.page, locator_name, None)
         if locator is None:
             raise Exception(f"Locator para o elemento '{elemento}' não encontrado.")
+        # Se o elemento tem texto após o pipe, valida o texto após o clique
+        texto_esperado = elemento.split('|')[1].strip() if '|' in elemento else None
         context.page.clicar(locator)
+        if texto_esperado:
+            el = context.driver.find_element(*locator)
+            if texto_esperado not in el.text:
+                raise AssertionError(f"Texto '{texto_esperado}' não encontrado no elemento {elemento} após o clique.")
         logger.info(f"Clicou no elemento: {elemento}")
     except Exception as e:
         logger.error(f"Erro ao clicar no elemento {elemento}: {e}")
@@ -1500,15 +1731,23 @@ def step_preenche_campo(context, campo, valor):
     Passo quando para preencher um campo com um valor.
     """
     try:
-        locator = getattr(context.page, f"LOC_{campo.upper()}", None)
+        locator_name = LOCATOR_MAP.get(campo.lower().split('|')[0].strip())
+        locator = getattr(context.page, locator_name, None)
         if locator is None:
             raise Exception(f"Locator para o campo '{campo}' não encontrado.")
+        # Se o campo tem texto após o pipe, valida o texto após preencher
+        texto_esperado = campo.split('|')[1].strip() if '|' in campo else None
         context.page.preencher(locator, valor)
+        if texto_esperado:
+            el = context.driver.find_element(*locator)
+            if texto_esperado not in el.text:
+                raise AssertionError(f"Texto '{texto_esperado}' não encontrado no campo {campo} após preencher.")
         logger.info(f"Preencheu o campo {campo} com o valor: {valor}")
     except Exception as e:
         logger.error(f"Erro ao preencher o campo {campo} com o valor {valor}: {e}")
         raise
 
+@when('valida que a URL da página é "{url}"')
 @then('valida que a URL da página é "{url}"')
 def step_valida_url(context, url):
     """
@@ -1524,36 +1763,96 @@ def step_valida_url(context, url):
         raise
 
 # Outros passos (steps) podem ser adicionados aqui conforme necessário
+
+
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from behave import when
+
+# Step para validar existência de elemento com texto
+@then('o usuário valida que existe o elemento "{elemento}"')
+def step_valida_existencia_elemento(context, elemento):
+    locator_name = LOCATOR_MAP.get(elemento)
+    locator = getattr(context.page, locator_name, None)
+    if locator is None:
+        raise Exception(f"Locator para o elemento '{elemento}' não encontrado.")
+    texto_esperado = elemento.split('|')[1].strip() if '|' in elemento else None
+    WebDriverWait(context.driver, context.default_timeout).until(
+        EC.presence_of_element_located(locator)
+    )
+    el = context.driver.find_element(*locator)
+    if texto_esperado and texto_esperado not in el.text:
+        raise AssertionError(f"Texto '{texto_esperado}' não encontrado no elemento {elemento}.")
+    logger.info(f"Elemento '{elemento}' validado com sucesso.")
+
+@when('preencho os campos da tabela:')
+def step_preencho_tabela(context):
+    for row in context.table:
+        campo = row['Campo']
+        valor = row['Valor']
+        locator_name = LOCATOR_MAP.get(campo.lower().split('|')[0].strip())
+        locator = getattr(context.page, locator_name, None)
+        if locator is None:
+            raise Exception(f"Locator para o campo '{campo}' não encontrado.")
+        context.page.preencher(locator, valor)
+        logger.info(f"Preencheu o campo {campo} com o valor: {valor}")
 `;
-            downloadFile(`steps_${featureSlug}.py`, stepsPy);
+            downloadFile(`${featureSlug}_steps.py`, stepsPy);
 
 
             // --- environment.py com configurações básicas ---
+
             const environmentPy = `# ${featureSlug}_environment.py gerado automaticamente para a feature "${feature.name}"
 # -*- coding: utf-8 -*-
 """
 Configurações do Behave para a feature "${feature.name}".
-Inclui configurações básicas e hooks de inicialização.
+Inclui inicialização do WebDriver e do Page Object Model (POM).
 """
+
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+import os
+import sys
+
+# Importa o Page Object gerado para esta feature
+from ${featureSlug}_pages import Page${slugify(feature.name, true)}
 
 def before_all(context):
     """
     Executado uma vez antes de todos os cenários.
+    Inicializa o WebDriver e o Page Object.
     """
-    # Configurações globais podem ser adicionadas aqui
-    context.default_timeout = 10  # Timeout padrão de 10 segundos
-    print("[INFO] Iniciando testes com timeout padrão de 10 segundos.")
+    chrome_options = Options()
+    chrome_options.add_argument('--start-maximized')
+    # Permite customizar o caminho do chromedriver via variável de ambiente
+    chromedriver_path = os.getenv('CHROMEDRIVER_PATH')
+    if chromedriver_path:
+        service = Service(chromedriver_path)
+        context.driver = webdriver.Chrome(service=service, options=chrome_options)
+    else:
+        context.driver = webdriver.Chrome(options=chrome_options)
+    context.driver.implicitly_wait(5)
+    context.default_timeout = int(os.getenv('SELENIUM_TIMEOUT', 10))  # Timeout padrão de 10 segundos, parametrizável por variável de ambiente
+    # Inicializa o Page Object Model
+    context.page = Page${slugify(feature.name, true)}(context.driver)
+    print("[INFO] WebDriver e Page Object inicializados com sucesso.")
 
 def after_all(context):
     """
     Executado uma vez após todos os cenários.
+    Encerra o WebDriver.
     """
-    # Limpeza e fechamento de recursos podem ser feitos aqui
+    # TODO: Ajustar o mapeamento dos locators se necessário.
+    if hasattr(context, 'driver'):
+        context.driver.quit()
+        print("[INFO] WebDriver finalizado.")
     print("[INFO] Testes finalizados.")
 
 # Outros hooks e configurações podem ser adicionados aqui conforme necessário
 `;
-            downloadFile(`environment_${featureSlug}.py`, environmentPy);
+            downloadFile(`${featureSlug}_environment.py`, environmentPy);
 
 
             // --- requirements.txt com dependências básicas ---
@@ -1567,8 +1866,11 @@ Instale as dependências com: pip install -r requirements.txt
 selenium
 behave
 `;
-            downloadFile(`requirements_${featureSlug}.txt`, requirementsTxt);
+            downloadFile(`${featureSlug}_requirements.txt`, requirementsTxt);
         });
+        // Remove spinner e dá feedback ao usuário
+        hideSpinner();
+        showFeedback('Exportação concluída!');
     });
 }
 
