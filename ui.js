@@ -1547,21 +1547,135 @@ function showLogDetailsModal(interaction) {
     title.style.textAlign = 'left';
     modal.appendChild(title);
 
-    const details = [
-        ['Nome do elemento', interaction.nomeElemento || ''],
-        ['Valor preenchido', interaction.valorPreenchido || interaction.nomeArquivo || ''],
-        ['Selector CSS', (interaction.cssSelector && typeof interaction.cssSelector === 'object' ? interaction.cssSelector.css : interaction.cssSelector) || ''],
-        ['XPath', (interaction.xpath && typeof interaction.xpath === 'object' ? interaction.xpath.xpath : interaction.xpath) || ''],
-        ['Timestamp', interaction.timestamp ? new Date(interaction.timestamp).toLocaleString() : ''],
-        ['Texto do passo', interaction.stepText || ''],
-    ];
-    details.forEach(([label, value]) => {
-        if (value) {
-            const row = document.createElement('div');
-            row.innerHTML = `<b>${label}:</b> <span style="font-family:monospace">${value}</span>`;
 
-            modal.appendChild(row);
+    // --- NOVO: Exibe campo de índice SEMPRE ao lado do seletor CSS/XPath ---
+    // Extrai objetos completos
+    const cssSelectorObj = interaction.cssSelector && typeof interaction.cssSelector === 'object' ? interaction.cssSelector : null;
+    const xpathObj = interaction.xpath && typeof interaction.xpath === 'object' ? interaction.xpath : null;
+    // Ocorrências e índice
+    const ocorrenciasCss = (cssSelectorObj && cssSelectorObj.ocorrencias) ? cssSelectorObj.ocorrencias : 1;
+    const indiceCss = (cssSelectorObj && cssSelectorObj.indice) ? cssSelectorObj.indice : 1;
+    const ocorrenciasXpath = (xpathObj && xpathObj.ocorrencias) ? xpathObj.ocorrencias : 1;
+    const indiceXpath = (xpathObj && xpathObj.indice) ? xpathObj.indice : 1;
+
+    // Nome do elemento
+    if (interaction.nomeElemento) {
+        const row = document.createElement('div');
+        row.innerHTML = `<b>Nome do elemento:</b> <span style="font-family:monospace">${interaction.nomeElemento}</span>`;
+        modal.appendChild(row);
+    }
+    // Valor preenchido
+    if (interaction.valorPreenchido || interaction.nomeArquivo) {
+        const row = document.createElement('div');
+        row.innerHTML = `<b>Valor preenchido:</b> <span style="font-family:monospace">${interaction.valorPreenchido || interaction.nomeArquivo}</span>`;
+        modal.appendChild(row);
+    }
+
+    // --- Campo de seletor CSS com índice ---
+    const cssRow = document.createElement('div');
+    cssRow.style.display = 'flex';
+    cssRow.style.alignItems = 'center';
+    cssRow.style.gap = '8px';
+    cssRow.style.marginBottom = '2px';
+    const cssLabel = document.createElement('b');
+    cssLabel.textContent = 'Selector CSS:';
+    cssRow.appendChild(cssLabel);
+    const cssValue = document.createElement('span');
+    cssValue.style.fontFamily = 'monospace';
+    cssValue.textContent = (cssSelectorObj && cssSelectorObj.css) ? cssSelectorObj.css : (interaction.cssSelector || '');
+    cssRow.appendChild(cssValue);
+    // Campo de índice
+    const cssInput = document.createElement('input');
+    cssInput.type = 'number';
+    cssInput.min = '1';
+    cssInput.max = ocorrenciasCss;
+    cssInput.value = indiceCss;
+    cssInput.style.width = '56px';
+    cssInput.style.marginLeft = '6px';
+    cssInput.style.fontSize = '13px';
+    cssInput.title = `Índice da ocorrência do seletor CSS (1 a ${ocorrenciasCss})`;
+    cssRow.appendChild(document.createTextNode(' (índice: '));
+    cssRow.appendChild(cssInput);
+    cssRow.appendChild(document.createTextNode(` / ${ocorrenciasCss})`));
+    modal.appendChild(cssRow);
+
+    // --- Campo de seletor XPath com índice ---
+    const xpathRow = document.createElement('div');
+    xpathRow.style.display = 'flex';
+    xpathRow.style.alignItems = 'center';
+    xpathRow.style.gap = '8px';
+    xpathRow.style.marginBottom = '2px';
+    const xpathLabel = document.createElement('b');
+    xpathLabel.textContent = 'XPath:';
+    xpathRow.appendChild(xpathLabel);
+    const xpathValue = document.createElement('span');
+    xpathValue.style.fontFamily = 'monospace';
+    xpathValue.textContent = (xpathObj && xpathObj.xpath) ? xpathObj.xpath : (interaction.xpath || '');
+    xpathRow.appendChild(xpathValue);
+    // Campo de índice
+    const xpathInput = document.createElement('input');
+    xpathInput.type = 'number';
+    xpathInput.min = '1';
+    xpathInput.max = ocorrenciasXpath;
+    xpathInput.value = indiceXpath;
+    xpathInput.style.width = '56px';
+    xpathInput.style.marginLeft = '6px';
+    xpathInput.style.fontSize = '13px';
+    xpathInput.title = `Índice da ocorrência do XPath (1 a ${ocorrenciasXpath})`;
+    xpathRow.appendChild(document.createTextNode(' (índice: '));
+    xpathRow.appendChild(xpathInput);
+    xpathRow.appendChild(document.createTextNode(` / ${ocorrenciasXpath})`));
+    modal.appendChild(xpathRow);
+
+    // Timestamp
+    if (interaction.timestamp) {
+        const row = document.createElement('div');
+        row.innerHTML = `<b>Timestamp:</b> <span style="font-family:monospace">${new Date(interaction.timestamp).toLocaleString()}</span>`;
+        modal.appendChild(row);
+    }
+    // Texto do passo
+    if (interaction.stepText) {
+        const row = document.createElement('div');
+        row.innerHTML = `<b>Texto do passo:</b> <span style="font-family:monospace">${interaction.stepText}</span>`;
+        modal.appendChild(row);
+    }
+
+    // --- Atualiza seletor salvo ao mudar índice ---
+    cssInput.addEventListener('change', function() {
+        let idx = parseInt(cssInput.value, 10);
+        if (!idx || idx < 1) idx = 1;
+        if (idx > ocorrenciasCss) idx = ocorrenciasCss;
+        cssInput.value = idx;
+        if (cssSelectorObj && cssSelectorObj.css) {
+            let baseCss = cssSelectorObj.css.replace(/:nth-of-type\(\d+\)/, '');
+            if (idx > 1) baseCss += `:nth-of-type(${idx})`;
+            interaction.cssSelector = {
+                ...cssSelectorObj,
+                css: baseCss,
+                indice: idx
+            };
         }
+        saveInteractionsToStorage && saveInteractionsToStorage();
+        renderLogWithActions && renderLogWithActions();
+        cssValue.textContent = (interaction.cssSelector && interaction.cssSelector.css) ? interaction.cssSelector.css : (interaction.cssSelector || '');
+    });
+    xpathInput.addEventListener('change', function() {
+        let idx = parseInt(xpathInput.value, 10);
+        if (!idx || idx < 1) idx = 1;
+        if (idx > ocorrenciasXpath) idx = ocorrenciasXpath;
+        xpathInput.value = idx;
+        if (xpathObj && xpathObj.xpath) {
+            let baseXpath = xpathObj.xpath.replace(/\[\d+\]$/, '');
+            if (idx > 1) baseXpath += `[${idx}]`;
+            interaction.xpath = {
+                ...xpathObj,
+                xpath: baseXpath,
+                indice: idx
+            };
+        }
+        saveInteractionsToStorage && saveInteractionsToStorage();
+        renderLogWithActions && renderLogWithActions();
+        xpathValue.textContent = (interaction.xpath && interaction.xpath.xpath) ? interaction.xpath.xpath : (interaction.xpath || '');
     });
 
     // Botão fechar
@@ -1735,6 +1849,47 @@ function showEditModal(idx) {
         valorPreenchidoInput.autocomplete = 'off';
         modal.appendChild(valorPreenchidoInput);
     }
+
+    // --- NOVO: Seletor não único, exibe aviso e campo de escolha de ocorrência ---
+    // Suporta tanto CSS quanto XPath
+    let ocorrenciaInput = null;
+    let avisoDiv = null;
+    let cssSelectorObj = interaction.cssSelector && typeof interaction.cssSelector === 'object' ? interaction.cssSelector : null;
+    let xpathObj = interaction.xpath && typeof interaction.xpath === 'object' ? interaction.xpath : null;
+    let aviso = (cssSelectorObj && cssSelectorObj.aviso) || (xpathObj && xpathObj.aviso);
+    let ocorrencias = (cssSelectorObj && cssSelectorObj.ocorrencias) || (xpathObj && xpathObj.ocorrencias);
+    let indiceAtual = (cssSelectorObj && cssSelectorObj.indice) || (xpathObj && xpathObj.indice) || 1;
+    if (aviso && ocorrencias > 1) {
+        avisoDiv = document.createElement('div');
+        avisoDiv.textContent = aviso;
+        avisoDiv.style.background = '#fff3cd';
+        avisoDiv.style.color = '#856404';
+        avisoDiv.style.padding = '7px 10px';
+        avisoDiv.style.borderRadius = '5px';
+        avisoDiv.style.fontSize = '13px';
+        avisoDiv.style.marginBottom = '8px';
+        avisoDiv.style.border = '1px solid #ffeeba';
+        modal.appendChild(avisoDiv);
+        // Campo para escolher a ocorrência
+        const ocorrenciaLabel = document.createElement('label');
+        ocorrenciaLabel.textContent = `Escolha a ocorrência desejada (1 a ${ocorrencias}):`;
+        ocorrenciaLabel.style.fontWeight = 'bold';
+        ocorrenciaLabel.style.marginBottom = '4px';
+        modal.appendChild(ocorrenciaLabel);
+        ocorrenciaInput = document.createElement('input');
+        ocorrenciaInput.type = 'number';
+        ocorrenciaInput.min = '1';
+        ocorrenciaInput.max = ocorrencias;
+        ocorrenciaInput.value = indiceAtual;
+        ocorrenciaInput.style.width = '100%';
+        ocorrenciaInput.style.padding = '7px';
+        ocorrenciaInput.style.borderRadius = '5px';
+        ocorrenciaInput.style.border = '1px solid #ccc';
+        ocorrenciaInput.style.fontSize = '14px';
+        ocorrenciaInput.style.marginBottom = '12px';
+        ocorrenciaInput.autocomplete = 'off';
+        modal.appendChild(ocorrenciaInput);
+    }
     // Botões
     const btns = document.createElement('div');
     btns.style.display = 'flex';
@@ -1772,6 +1927,35 @@ function showEditModal(idx) {
         }
         if (interaction.acao === 'preenche' && valorPreenchidoInput) {
             interaction.valorPreenchido = valorPreenchidoInput.value;
+        }
+        // --- NOVO: Atualiza o seletor com o índice escolhido, se aplicável ---
+        if (ocorrenciaInput && ocorrenciaInput.value) {
+            const idxEscolhido = parseInt(ocorrenciaInput.value, 10);
+            // Atualiza CSS
+            if (cssSelectorObj && cssSelectorObj.css) {
+                // Se já tem :nth-of-type, substitui, senão adiciona
+                let baseCss = cssSelectorObj.css.replace(/:nth-of-type\(\d+\)/, '');
+                if (idxEscolhido > 1) {
+                    baseCss += `:nth-of-type(${idxEscolhido})`;
+                }
+                interaction.cssSelector = {
+                    ...cssSelectorObj,
+                    css: baseCss,
+                    indice: idxEscolhido
+                };
+            }
+            // Atualiza XPath
+            if (xpathObj && xpathObj.xpath) {
+                let baseXpath = xpathObj.xpath.replace(/\[\d+\]$/, '');
+                if (idxEscolhido > 1) {
+                    baseXpath += `[${idxEscolhido}]`;
+                }
+                interaction.xpath = {
+                    ...xpathObj,
+                    xpath: baseXpath,
+                    indice: idxEscolhido
+                };
+            }
         }
         saveInteractionsToStorage();
         renderLogWithActions();

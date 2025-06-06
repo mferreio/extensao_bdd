@@ -66,7 +66,9 @@ function getCSSSelector(element) {
     let result = {
         css: null,
         tipo: null,
-        aviso: null
+        aviso: null,
+        ocorrencias: 0,
+        indice: null // índice sugerido (1-based)
     };
     const attrPriority = [
         'data-testid', 'data-qa', 'formcontrolname', 'aria-label', 'data-pc-name', 'data-pc-section', 'id', 'name', 'type', 'placeholder', 'href'
@@ -76,21 +78,47 @@ function getCSSSelector(element) {
     // 1. Prioridade máxima: atributos robustos e únicos
     for (const attr of attrPriority) {
         const val = element.getAttribute && element.getAttribute(attr);
-        if (val && document.querySelectorAll(`${element.tagName.toLowerCase()}[${attr}="${CSS.escape(val)}"]`).length === 1) {
-            result.css = `${element.tagName.toLowerCase()}[${attr}="${val}"]`;
-            result.tipo = 'robusto';
-            return result;
-        }
-        if (val && document.querySelectorAll(`[${attr}="${CSS.escape(val)}"]`).length === 1) {
-            result.css = `[${attr}="${val}"]`;
-            result.tipo = 'robusto';
-            return result;
+        if (val) {
+            let selector = `${element.tagName.toLowerCase()}[${attr}="${val}"]`;
+            let matches = document.querySelectorAll(selector);
+            if (matches.length === 1) {
+                result.css = selector;
+                result.tipo = 'robusto';
+                result.ocorrencias = 1;
+                result.indice = 1;
+                return result;
+            } else if (matches.length > 1) {
+                result.css = selector;
+                result.tipo = 'nao_unico';
+                result.ocorrencias = matches.length;
+                result.indice = Array.from(matches).indexOf(element) + 1;
+                result.aviso = `Seletor não é único. Existem ${matches.length} elementos. Escolha a ocorrência desejada.`;
+                return result;
+            }
+            selector = `[${attr}="${val}"]`;
+            matches = document.querySelectorAll(selector);
+            if (matches.length === 1) {
+                result.css = selector;
+                result.tipo = 'robusto';
+                result.ocorrencias = 1;
+                result.indice = 1;
+                return result;
+            } else if (matches.length > 1) {
+                result.css = selector;
+                result.tipo = 'nao_unico';
+                result.ocorrencias = matches.length;
+                result.indice = Array.from(matches).indexOf(element) + 1;
+                result.aviso = `Seletor não é único. Existem ${matches.length} elementos. Escolha a ocorrência desejada.`;
+                return result;
+            }
         }
     }
     // 2. Se tem id único e não é dinâmico
     if (element.id && document.querySelectorAll(`#${CSS.escape(element.id)}`).length === 1 && !/^(_|auto|ember|react|ng|mat|p-)/i.test(element.id)) {
         result.css = `${element.tagName.toLowerCase()}#${element.id}`;
         result.tipo = 'robusto';
+        result.ocorrencias = 1;
+        result.indice = 1;
         return result;
     }
     // 3. Se tem classe única e não genérica
@@ -98,9 +126,20 @@ function getCSSSelector(element) {
         const classList = element.className.trim().split(/\s+/).filter(Boolean);
         for (const cls of classList) {
             if (/^(p-|ng-|mat-|ant-|Mui|css-)/.test(cls)) continue;
-            if (document.querySelectorAll(`.${CSS.escape(cls)}`).length === 1) {
+            const selector = `.${CSS.escape(cls)}`;
+            const matches = document.querySelectorAll(selector);
+            if (matches.length === 1) {
                 result.css = `${element.tagName.toLowerCase()}.${cls}`;
                 result.tipo = 'classe_unica';
+                result.ocorrencias = 1;
+                result.indice = 1;
+                return result;
+            } else if (matches.length > 1) {
+                result.css = `${element.tagName.toLowerCase()}.${cls}`;
+                result.tipo = 'nao_unico';
+                result.ocorrencias = matches.length;
+                result.indice = Array.from(matches).indexOf(element) + 1;
+                result.aviso = `Seletor não é único. Existem ${matches.length} elementos. Escolha a ocorrência desejada.`;
                 return result;
             }
         }
@@ -133,15 +172,41 @@ function getCSSSelector(element) {
     if (parentSelector) {
         for (const attr of attrPriority) {
             const val = element.getAttribute && element.getAttribute(attr);
-            if (val && document.querySelectorAll(`${parentSelector} ${element.tagName.toLowerCase()}[${attr}="${CSS.escape(val)}"]`).length === 1) {
-                result.css = `${parentSelector} ${element.tagName.toLowerCase()}[${attr}="${val}"]`;
-                result.tipo = 'componente_pai';
-                return result;
+            if (val) {
+                const selector = `${parentSelector} ${element.tagName.toLowerCase()}[${attr}="${val}"]`;
+                const matches = document.querySelectorAll(selector);
+                if (matches.length === 1) {
+                    result.css = selector;
+                    result.tipo = 'componente_pai';
+                    result.ocorrencias = 1;
+                    result.indice = 1;
+                    return result;
+                } else if (matches.length > 1) {
+                    result.css = selector;
+                    result.tipo = 'nao_unico';
+                    result.ocorrencias = matches.length;
+                    result.indice = Array.from(matches).indexOf(element) + 1;
+                    result.aviso = `Seletor não é único. Existem ${matches.length} elementos. Escolha a ocorrência desejada.`;
+                    return result;
+                }
             }
         }
-        result.css = `${parentSelector} ${element.tagName.toLowerCase()}`;
-        result.tipo = 'componente_pai';
-        return result;
+        const selector = `${parentSelector} ${element.tagName.toLowerCase()}`;
+        const matches = document.querySelectorAll(selector);
+        if (matches.length === 1) {
+            result.css = selector;
+            result.tipo = 'componente_pai';
+            result.ocorrencias = 1;
+            result.indice = 1;
+            return result;
+        } else if (matches.length > 1) {
+            result.css = selector;
+            result.tipo = 'nao_unico';
+            result.ocorrencias = matches.length;
+            result.indice = Array.from(matches).indexOf(element) + 1;
+            result.aviso = `Seletor não é único. Existem ${matches.length} elementos. Escolha a ocorrência desejada.`;
+            return result;
+        }
     }
     // 5. Procura ancestral robusto
     let ancestor = element.parentElement;
@@ -162,10 +227,23 @@ function getCSSSelector(element) {
     if (ancestorSelector) {
         for (const attr of attrPriority) {
             const val = element.getAttribute && element.getAttribute(attr);
-            if (val && document.querySelectorAll(`${ancestorSelector} ${element.tagName.toLowerCase()}[${attr}="${CSS.escape(val)}"]`).length === 1) {
-                result.css = `${ancestorSelector} ${element.tagName.toLowerCase()}[${attr}="${val}"]`;
-                result.tipo = 'ancestral';
-                return result;
+            if (val) {
+                const selector = `${ancestorSelector} ${element.tagName.toLowerCase()}[${attr}="${val}"]`;
+                const matches = document.querySelectorAll(selector);
+                if (matches.length === 1) {
+                    result.css = selector;
+                    result.tipo = 'ancestral';
+                    result.ocorrencias = 1;
+                    result.indice = 1;
+                    return result;
+                } else if (matches.length > 1) {
+                    result.css = selector;
+                    result.tipo = 'nao_unico';
+                    result.ocorrencias = matches.length;
+                    result.indice = Array.from(matches).indexOf(element) + 1;
+                    result.aviso = `Seletor não é único. Existem ${matches.length} elementos. Escolha a ocorrência desejada.`;
+                    return result;
+                }
             }
         }
         const siblings = Array.from(ancestor.querySelectorAll(element.tagName.toLowerCase()));
@@ -174,11 +252,16 @@ function getCSSSelector(element) {
             if (idx > 0) {
                 result.css = `${ancestorSelector} ${element.tagName.toLowerCase()}:nth-of-type(${idx})`;
                 result.tipo = 'ancestral';
+                result.ocorrencias = siblings.length;
+                result.indice = idx;
+                result.aviso = `Seletor não é único. Existem ${siblings.length} elementos. Escolha a ocorrência desejada.`;
                 return result;
             }
         } else if (siblings.length === 1) {
             result.css = `${ancestorSelector} ${element.tagName.toLowerCase()}`;
             result.tipo = 'ancestral';
+            result.ocorrencias = 1;
+            result.indice = 1;
             return result;
         }
     }
@@ -192,9 +275,21 @@ function getCSSSelector(element) {
         d++;
     }
     if (!genericTags.includes(chain) && !/^([a-z]+)(\s*[> ]\s*[a-z]+)?$/i.test(chain)) {
-        result.css = chain;
-        result.tipo = 'hierarquico';
-        return result;
+        const matches = document.querySelectorAll(chain);
+        if (matches.length === 1) {
+            result.css = chain;
+            result.tipo = 'hierarquico';
+            result.ocorrencias = 1;
+            result.indice = 1;
+            return result;
+        } else if (matches.length > 1) {
+            result.css = chain;
+            result.tipo = 'nao_unico';
+            result.ocorrencias = matches.length;
+            result.indice = Array.from(matches).indexOf(element) + 1;
+            result.aviso = `Seletor não é único. Existem ${matches.length} elementos. Escolha a ocorrência desejada.`;
+            return result;
+        }
     }
     if (!element || element.nodeType !== Node.ELEMENT_NODE) {
         result.aviso = 'Elemento inválido.';
@@ -225,8 +320,25 @@ function getCSSSelector(element) {
         }
         return result;
     }
+    const matches = document.querySelectorAll(path);
+    if (matches.length === 1) {
+        result.css = path;
+        result.tipo = 'generico';
+        result.ocorrencias = 1;
+        result.indice = 1;
+        return result;
+    } else if (matches.length > 1) {
+        result.css = path;
+        result.tipo = 'nao_unico';
+        result.ocorrencias = matches.length;
+        result.indice = Array.from(matches).indexOf(element) + 1;
+        result.aviso = `Seletor não é único. Existem ${matches.length} elementos. Escolha a ocorrência desejada.`;
+        return result;
+    }
     result.css = path;
     result.tipo = 'generico';
+    result.ocorrencias = 0;
+    result.indice = null;
     return result;
 }
 
@@ -235,7 +347,9 @@ function getRobustXPath(element) {
     let result = {
         xpath: null,
         tipo: null,
-        aviso: null
+        aviso: null,
+        ocorrencias: 0,
+        indice: null
     };
     const attrs = [
         'data-testid', 'data-qa', 'formcontrolname', 'aria-label', 'data-pc-name', 'data-pc-section', 'name', 'type', 'placeholder', 'title', 'role'
@@ -244,6 +358,8 @@ function getRobustXPath(element) {
     if (element.id && document.querySelectorAll(`#${CSS.escape(element.id)}`).length === 1 && !/^(_|auto|ember|react|ng|mat|p-)/i.test(element.id)) {
         result.xpath = `//*[@id="${element.id}"]`;
         result.tipo = 'robusto';
+        result.ocorrencias = 1;
+        result.indice = 1;
         return result;
     }
     // 2. Atributos robustos e únicos
@@ -252,9 +368,21 @@ function getRobustXPath(element) {
         if (val) {
             const xpath = `//${element.tagName.toLowerCase()}[@${attr}='${val}']`;
             try {
-                if (document.evaluate(`count(${xpath})`, document, null, XPathResult.NUMBER_TYPE, null).numberValue === 1) {
+                const count = document.evaluate(`count(${xpath})`, document, null, XPathResult.NUMBER_TYPE, null).numberValue;
+                if (count === 1) {
                     result.xpath = xpath;
                     result.tipo = 'robusto';
+                    result.ocorrencias = 1;
+                    result.indice = 1;
+                    return result;
+                } else if (count > 1) {
+                    // Encontrou múltiplos, retorna info
+                    const all = Array.from(document.querySelectorAll(element.tagName.toLowerCase() + `[${attr}='${val}']`));
+                    result.xpath = xpath;
+                    result.tipo = 'nao_unico';
+                    result.ocorrencias = count;
+                    result.indice = all.indexOf(element) + 1;
+                    result.aviso = `XPath não é único. Existem ${count} elementos. Escolha a ocorrência desejada.`;
                     return result;
                 }
             } catch (e) { /* ignora erro de XPath inválido */ }
@@ -296,17 +424,44 @@ function getRobustXPath(element) {
             if (val) {
                 const fullXpath = `${parentXPath}//${element.tagName.toLowerCase()}[@${attr}='${val}']`;
                 try {
-                    if (document.evaluate(`count(${fullXpath})`, document, null, XPathResult.NUMBER_TYPE, null).numberValue === 1) {
+                    const count = document.evaluate(`count(${fullXpath})`, document, null, XPathResult.NUMBER_TYPE, null).numberValue;
+                    if (count === 1) {
                         result.xpath = fullXpath;
                         result.tipo = 'componente_pai';
+                        result.ocorrencias = 1;
+                        result.indice = 1;
+                        return result;
+                    } else if (count > 1) {
+                        const all = Array.from(document.querySelectorAll(element.tagName.toLowerCase() + `[${attr}='${val}']`));
+                        result.xpath = fullXpath;
+                        result.tipo = 'nao_unico';
+                        result.ocorrencias = count;
+                        result.indice = all.indexOf(element) + 1;
+                        result.aviso = `XPath não é único. Existem ${count} elementos. Escolha a ocorrência desejada.`;
                         return result;
                     }
                 } catch (e) { /* ignora erro de XPath inválido */ }
             }
         }
-        result.xpath = `${parentXPath}//${element.tagName.toLowerCase()}`;
-        result.tipo = 'componente_pai';
-        return result;
+        // Para o caso sem atributo
+        const fullXpath = `${parentXPath}//${element.tagName.toLowerCase()}`;
+        try {
+            const all = Array.from(document.querySelectorAll(element.tagName.toLowerCase()));
+            if (all.length === 1) {
+                result.xpath = fullXpath;
+                result.tipo = 'componente_pai';
+                result.ocorrencias = 1;
+                result.indice = 1;
+                return result;
+            } else if (all.length > 1) {
+                result.xpath = fullXpath;
+                result.tipo = 'nao_unico';
+                result.ocorrencias = all.length;
+                result.indice = all.indexOf(element) + 1;
+                result.aviso = `XPath não é único. Existem ${all.length} elementos. Escolha a ocorrência desejada.`;
+                return result;
+            }
+        } catch (e) {}
     }
     // 4. Ancestral robusto
     let ancestor = element.parentElement;
@@ -335,9 +490,20 @@ function getRobustXPath(element) {
             if (val) {
                 const fullXpath = `${ancestorXPath}//${element.tagName.toLowerCase()}[@${attr}='${val}']`;
                 try {
-                    if (document.evaluate(`count(${fullXpath})`, document, null, XPathResult.NUMBER_TYPE, null).numberValue === 1) {
+                    const count = document.evaluate(`count(${fullXpath})`, document, null, XPathResult.NUMBER_TYPE, null).numberValue;
+                    if (count === 1) {
                         result.xpath = fullXpath;
                         result.tipo = 'ancestral';
+                        result.ocorrencias = 1;
+                        result.indice = 1;
+                        return result;
+                    } else if (count > 1) {
+                        const all = Array.from(document.querySelectorAll(element.tagName.toLowerCase() + `[${attr}='${val}']`));
+                        result.xpath = fullXpath;
+                        result.tipo = 'nao_unico';
+                        result.ocorrencias = count;
+                        result.indice = all.indexOf(element) + 1;
+                        result.aviso = `XPath não é único. Existem ${count} elementos. Escolha a ocorrência desejada.`;
                         return result;
                     }
                 } catch (e) { /* ignora erro de XPath inválido */ }
@@ -349,11 +515,16 @@ function getRobustXPath(element) {
             if (idx > 0) {
                 result.xpath = `${ancestorXPath}//${element.tagName.toLowerCase()}[${idx}]`;
                 result.tipo = 'ancestral';
+                result.ocorrencias = siblings.length;
+                result.indice = idx;
+                result.aviso = `XPath não é único. Existem ${siblings.length} elementos. Escolha a ocorrência desejada.`;
                 return result;
             }
         } else if (siblings.length === 1) {
             result.xpath = `${ancestorXPath}//${element.tagName.toLowerCase()}`;
             result.tipo = 'ancestral';
+            result.ocorrencias = 1;
+            result.indice = 1;
             return result;
         }
     }
@@ -362,11 +533,25 @@ function getRobustXPath(element) {
         const classList = element.className.trim().split(/\s+/).filter(Boolean);
         for (const cls of classList) {
             if (/^(p-|ng-|mat-|ant-|Mui|css-)/.test(cls)) continue;
-            if (document.evaluate(`count(//${element.tagName.toLowerCase()}[contains(concat(' ',normalize-space(@class),' '),' ${cls} ')])`, document, null, XPathResult.NUMBER_TYPE, null).numberValue === 1) {
-                result.xpath = `//${element.tagName.toLowerCase()}[contains(concat(' ',normalize-space(@class),' '),' ${cls} ')]`;
-                result.tipo = 'classe_unica';
-                return result;
-            }
+            const xpath = `//${element.tagName.toLowerCase()}[contains(concat(' ',normalize-space(@class),' '),' ${cls} ')]`;
+            try {
+                const count = document.evaluate(`count(${xpath})`, document, null, XPathResult.NUMBER_TYPE, null).numberValue;
+                if (count === 1) {
+                    result.xpath = xpath;
+                    result.tipo = 'classe_unica';
+                    result.ocorrencias = 1;
+                    result.indice = 1;
+                    return result;
+                } else if (count > 1) {
+                    const all = Array.from(document.querySelectorAll(element.tagName.toLowerCase() + `.${cls}`));
+                    result.xpath = xpath;
+                    result.tipo = 'nao_unico';
+                    result.ocorrencias = count;
+                    result.indice = all.indexOf(element) + 1;
+                    result.aviso = `XPath não é único. Existem ${count} elementos. Escolha a ocorrência desejada.`;
+                    return result;
+                }
+            } catch (e) {}
         }
     }
     // 6. Fallback: XPath por texto visível único
@@ -378,6 +563,15 @@ function getRobustXPath(element) {
             if (matches.length === 1) {
                 result.xpath = `//${element.tagName.toLowerCase()}[normalize-space(text())='${text.replace(/'/g, "\'")}']`;
                 result.tipo = 'texto_unico';
+                result.ocorrencias = 1;
+                result.indice = 1;
+                return result;
+            } else if (matches.length > 1) {
+                result.xpath = `//${element.tagName.toLowerCase()}[normalize-space(text())='${text.replace(/'/g, "\'")}']`;
+                result.tipo = 'nao_unico';
+                result.ocorrencias = matches.length;
+                result.indice = matches.indexOf(element) + 1;
+                result.aviso = `XPath não é único. Existem ${matches.length} elementos. Escolha a ocorrência desejada.`;
                 return result;
             }
         }
@@ -398,8 +592,29 @@ function getRobustXPath(element) {
         parent = parent.parentElement;
         depth++;
     }
-    result.xpath = `//${path}`;
+    const xpath = `//${path}`;
+    try {
+        const all = Array.from(document.querySelectorAll(element.tagName.toLowerCase()));
+        if (all.length === 1) {
+            result.xpath = xpath;
+            result.tipo = 'generico';
+            result.ocorrencias = 1;
+            result.indice = 1;
+            result.aviso = 'XPath genérico. Considere adicionar um atributo único ao elemento.';
+            return result;
+        } else if (all.length > 1) {
+            result.xpath = xpath;
+            result.tipo = 'nao_unico';
+            result.ocorrencias = all.length;
+            result.indice = all.indexOf(element) + 1;
+            result.aviso = `XPath não é único. Existem ${all.length} elementos. Escolha a ocorrência desejada.`;
+            return result;
+        }
+    } catch (e) {}
+    result.xpath = xpath;
     result.tipo = 'generico';
+    result.ocorrencias = 0;
+    result.indice = null;
     result.aviso = 'XPath genérico. Considere adicionar um atributo único ao elemento.';
     return result;
 }
@@ -477,7 +692,11 @@ function getSelectors(element) {
         css: cssResult.css,
         xpath: xpathResult.xpath,
         tipo,
-        aviso
+        aviso,
+        ocorrencias_css: cssResult.ocorrencias,
+        indice_css: cssResult.indice,
+        ocorrencias_xpath: xpathResult.ocorrencias,
+        indice_xpath: xpathResult.indice
     };
 }
 
