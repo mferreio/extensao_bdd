@@ -1,3 +1,56 @@
+// ====== Destaque visual de elemento ao passar o mouse (tipo DevTools) ======
+let gherkinHighlightCurrent = null;
+
+function injectGherkinHighlightStyle() {
+    if (!document.getElementById('gherkin-highlight-style')) {
+        const style = document.createElement('style');
+        style.id = 'gherkin-highlight-style';
+        style.innerHTML = `
+        .gherkin-highlight-hover {
+            outline: 2px solid #00bfff !important;
+            background: rgba(0,191,255,0.08) !important;
+            cursor: pointer !important;
+            z-index: 999999 !important;
+        }`;
+        document.head.appendChild(style);
+    }
+}
+
+function enableGherkinHighlightMode() {
+    injectGherkinHighlightStyle();
+    function onMouseOver(e) {
+        if (gherkinHighlightCurrent) {
+            gherkinHighlightCurrent.classList.remove('gherkin-highlight-hover');
+        }
+        gherkinHighlightCurrent = e.target;
+        gherkinHighlightCurrent.classList.add('gherkin-highlight-hover');
+    }
+    function onMouseOut(e) {
+        if (gherkinHighlightCurrent) {
+            gherkinHighlightCurrent.classList.remove('gherkin-highlight-hover');
+            gherkinHighlightCurrent = null;
+        }
+    }
+    document.addEventListener('mouseover', onMouseOver, true);
+    document.addEventListener('mouseout', onMouseOut, true);
+    window.__gherkinHighlightOn = { onMouseOver, onMouseOut };
+}
+
+function disableGherkinHighlightMode() {
+    if (window.__gherkinHighlightOn) {
+        document.removeEventListener('mouseover', window.__gherkinHighlightOn.onMouseOver, true);
+        document.removeEventListener('mouseout', window.__gherkinHighlightOn.onMouseOut, true);
+        if (gherkinHighlightCurrent) {
+            gherkinHighlightCurrent.classList.remove('gherkin-highlight-hover');
+            gherkinHighlightCurrent = null;
+        }
+        window.__gherkinHighlightOn = null;
+    }
+}
+
+// Exponha as funções no escopo global para fácil integração com o painel
+window.enableGherkinHighlightMode = enableGherkinHighlightMode;
+window.disableGherkinHighlightMode = disableGherkinHighlightMode;
 // Importa funções utilitárias e de UI
 import { slugify, downloadFile, showFeedback, debounce, getCSSSelector, isExtensionContextValid } from './utils.js';
 import {

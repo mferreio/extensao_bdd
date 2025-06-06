@@ -82,7 +82,7 @@ body, h1 {
 }
 .gherkin-panel-header h3 {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 0.85rem !important;
     color: var(--color-primary);
     text-align: center;
     font-weight: 700;
@@ -626,6 +626,14 @@ function renderPanelContent(panel) {
         <div class="gherkin-panel-header">
             <h3>GERADOR DE TESTES AUTOMATIZADOS EM PYTHON</h3>
             <div class="button-container-top">
+                <button id="gherkin-highlight-toggle" title="Selecionar elemento na página" style="background:none; border:none; cursor:pointer; font-size:1.2rem; padding:2px 6px;">
+                    <span id="gherkin-highlight-icon" style="display:inline-block; vertical-align:middle;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="#00bfff" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="#00bfff" stroke-width="2" fill="none"/>
+                            <path d="M12 7v5l3 3" stroke="#00bfff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                </button>
                 <button id="gherkin-reopen" title="Reabrir" style="display: none;">Abrir</button>
                 <button id="gherkin-minimize" title="Minimizar">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#ffc107" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>
@@ -2118,6 +2126,35 @@ driver.find_element(By.CSS_SELECTOR, "${interaction.cssSelector}").send_keys("/c
 }
 
 function initializePanelEvents(panel) {
+    // Botão de destaque visual (hover)
+    const highlightBtn = panel.querySelector('#gherkin-highlight-toggle');
+    const highlightIcon = panel.querySelector('#gherkin-highlight-icon svg');
+    if (highlightBtn) {
+        // Estado global para saber se está ativo
+        if (typeof window.__gherkinHighlightActive === 'undefined') window.__gherkinHighlightActive = false;
+        function updateHighlightBtn() {
+            if (window.__gherkinHighlightActive) {
+                highlightBtn.style.background = '#eaf6ff';
+                highlightBtn.style.borderRadius = '6px';
+                highlightBtn.title = 'Desativar seleção de elemento na página';
+                if (highlightIcon) highlightIcon.setAttribute('fill', '#0070f3');
+            } else {
+                highlightBtn.style.background = 'none';
+                highlightBtn.title = 'Selecionar elemento na página';
+                if (highlightIcon) highlightIcon.setAttribute('fill', '#00bfff');
+            }
+        }
+        updateHighlightBtn();
+        highlightBtn.onclick = () => {
+            window.__gherkinHighlightActive = !window.__gherkinHighlightActive;
+            if (window.__gherkinHighlightActive) {
+                if (typeof window.enableGherkinHighlightMode === 'function') window.enableGherkinHighlightMode();
+            } else {
+                if (typeof window.disableGherkinHighlightMode === 'function') window.disableGherkinHighlightMode();
+            }
+            updateHighlightBtn();
+        };
+    }
     // Garante que a função global de exportação aponte para a função correta do content.js
     if (window.gherkin && typeof window.gherkin.exportSelectedFeatures === 'function') {
         window.exportSelectedFeatures = window.gherkin.exportSelectedFeatures;
