@@ -838,36 +838,45 @@ function handleInputEvent(event) {
                     if (ev.type === 'keydown' && ev.key !== 'Tab') return;
                     const cssSelector = getCSSSelector(target);
                     const xpath = typeof getRobustXPath === 'function' ? getRobustXPath(target) : '';
-                    // Busca nome amigável do elemento
+                    // Busca nome amigável do elemento (prioridade: label visível > aria-label > placeholder > name > id > texto visível > tag)
                     let nomeElemento = '';
-                    if (target.getAttribute('aria-label')) {
-                        nomeElemento = target.getAttribute('aria-label');
-                    } else if (target.getAttribute('placeholder')) {
-                        nomeElemento = target.getAttribute('placeholder');
-                    } else if (target.getAttribute('name')) {
-                        nomeElemento = target.getAttribute('name');
-                    } else if (target.id) {
-                        // Tenta buscar label associado via for
+                    // 1. Label associada via for
+                    if (target.id) {
                         const label = document.querySelector('label[for="' + target.id + '"]');
                         if (label && label.textContent) {
                             nomeElemento = label.textContent.trim();
-                        } else {
-                            nomeElemento = target.id;
                         }
-                    } else if (target.closest) {
-                        // Tenta buscar label pai
+                    }
+                    // 2. Label pai
+                    if (!nomeElemento && target.closest) {
                         const labelParent = target.closest('label');
                         if (labelParent && labelParent.textContent) {
                             nomeElemento = labelParent.textContent.trim();
-                        } else if (target.className) {
-                            nomeElemento = target.className;
-                        } else {
-                            nomeElemento = target.tagName;
                         }
-                    } else if (target.className) {
-                        nomeElemento = target.className;
-                    } else {
-                        nomeElemento = target.tagName;
+                    }
+                    // 3. aria-label
+                    if (!nomeElemento && target.getAttribute('aria-label')) {
+                        nomeElemento = target.getAttribute('aria-label').trim();
+                    }
+                    // 4. placeholder
+                    if (!nomeElemento && target.getAttribute('placeholder')) {
+                        nomeElemento = target.getAttribute('placeholder').trim();
+                    }
+                    // 5. name
+                    if (!nomeElemento && target.getAttribute('name')) {
+                        nomeElemento = target.getAttribute('name').trim();
+                    }
+                    // 6. id (só se não for técnico, ex: não só números ou nomes genéricos)
+                    if (!nomeElemento && target.id && !/^([0-9_\-]+|input|field|campo)$/i.test(target.id)) {
+                        nomeElemento = target.id.trim();
+                    }
+                    // 7. Texto visível do campo (evita duplicidade)
+                    if (!nomeElemento && typeof target.innerText === 'string' && target.innerText.trim().length > 2 && target.innerText.trim().length < 60) {
+                        nomeElemento = target.innerText.trim();
+                    }
+                    // 8. Tag amigável
+                    if (!nomeElemento && target.tagName) {
+                        nomeElemento = target.tagName.toLowerCase();
                     }
                     nomeElemento = (nomeElemento || '').toString().trim();
                     let value = '';
