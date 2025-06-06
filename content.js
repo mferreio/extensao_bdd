@@ -1856,7 +1856,7 @@ def step_preencho_tabela(context):
 
             // --- environment.py com configurações básicas ---
 
-            const environmentPy = `# ${featureSlug}_environment.py gerado automaticamente para a feature "${feature.name}"
+            const environmentPy = `# environment.py gerado automaticamente para a feature "${feature.name}"
 # -*- coding: utf-8 -*-
 """
 Configurações do Behave para a feature "${feature.name}".
@@ -1905,7 +1905,7 @@ def after_all(context):
 
 # Outros hooks e configurações podem ser adicionados aqui conforme necessário
 `;
-            downloadFile(`${featureSlug}_environment.py`, environmentPy);
+            downloadFile(`environment.py`, environmentPy);
 
 
             // --- requirements.txt com dependências básicas ---
@@ -1919,7 +1919,7 @@ Instale as dependências com: pip install -r requirements.txt
 selenium
 behave
 `;
-            downloadFile(`${featureSlug}_requirements.txt`, requirementsTxt);
+            downloadFile(`requirements.txt`, requirementsTxt);
         });
         // Remove spinner e dá feedback ao usuário
         hideSpinner();

@@ -120,8 +120,47 @@ O **Assistente automatizador** foi desenvolvido com foco em segurança e privaci
 
 npx webpack --config webpack.config.js --no-cache
 
+## 🚦 Fluxo de Versionamento e Publicação no GitHub
+
+Siga as melhores práticas para manter o repositório organizado e facilitar a colaboração:
+
+### 1. Commit Local
+Sempre que fizer alterações relevantes (código, documentação, etc.), salve as mudanças localmente com um commit descritivo:
+```bash
+git add .
+git commit -m "Descreva claramente o que foi alterado"
+```
+
+### 2. Sincronize com o Repositório Remoto
+Antes de enviar, é recomendado atualizar sua branch local para evitar conflitos:
+```bash
+git pull origin main
+```
+(Substitua `main` pelo nome da sua branch, se for diferente.)
+
+### 3. Envie para o GitHub
+Após garantir que está tudo certo, envie suas alterações:
+```bash
+git push origin main
+```
+
+### 4. Releases e Versionamento
+- Crie uma tag para marcar versões estáveis:
+  ```bash
+  git tag -a v1.1.0 -m "Descrição da release"
+  git push origin v1.1.0
+  ```
+- No GitHub, vá em "Releases" e crie uma nova release vinculando à tag criada, adicionando um changelog claro.
+
+### 5. Boas Práticas Gerais
+- Faça commits pequenos e frequentes, com mensagens claras.
+- Use branches para novas features/correções.
+- Sempre revise antes de enviar para o `main`.
+- Mantenha o README e o changelog atualizados.
+
 ## Licença
 Este projeto foi produzido por Matheus Ferreira de Oliveira.
 V: 1.0
 
 
+npx webpack --config webpack.config.js
