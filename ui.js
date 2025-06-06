@@ -1258,10 +1258,10 @@ function renderLogWithActions() {
 
             // Elemento
             const tdElem = document.createElement('td');
-            // Exibe apenas o texto visível se estiver presente no nomeElemento (separado por |)
-            if (i.nomeElemento && i.nomeElemento.includes('|')) {
+            if (i.acao === 'valida_url') {
+                tdElem.textContent = i.urlEsperada || '';
+            } else if (i.nomeElemento && i.nomeElemento.includes('|')) {
                 const partes = i.nomeElemento.split('|');
-                // Mostra o texto do elemento (após o pipe)
                 tdElem.textContent = partes[1].trim();
             } else {
                 tdElem.textContent = i.nomeElemento || '';
@@ -1277,8 +1277,6 @@ function renderLogWithActions() {
                 tdValor.textContent = i.nomeArquivo || '';
             } else if (i.acao === 'login') {
                 tdValor.textContent = i.valorPreenchido || '';
-            } else if (i.acao === 'valida_url') {
-                tdValor.textContent = i.urlEsperada || '';
             } else {
                 tdValor.textContent = '';
             }
@@ -1668,15 +1666,23 @@ function showEditModal(idx) {
         actionSelect.value = interaction.acao;
     }
     modal.appendChild(actionSelect);
-    // Campo nome do elemento
+    // Campo nome do elemento ou URL esperada (para valida_url)
     const nomeLabel = document.createElement('label');
-    nomeLabel.textContent = 'Nome do elemento:';
+    if (interaction.acao === 'valida_url') {
+        nomeLabel.textContent = 'URL esperada:';
+    } else {
+        nomeLabel.textContent = 'Nome do elemento:';
+    }
     nomeLabel.style.fontWeight = 'bold';
     nomeLabel.style.marginBottom = '4px';
     modal.appendChild(nomeLabel);
     const nomeInput = document.createElement('input');
     nomeInput.type = 'text';
-    nomeInput.value = interaction.nomeElemento;
+    if (interaction.acao === 'valida_url') {
+        nomeInput.value = interaction.urlEsperada || '';
+    } else {
+        nomeInput.value = interaction.nomeElemento;
+    }
     nomeInput.style.width = '100%';
     nomeInput.style.padding = '7px';
     nomeInput.style.borderRadius = '5px';
@@ -1748,7 +1754,11 @@ function showEditModal(idx) {
             const selectedOption = actionSelect.options ? actionSelect.options[actionSelect.selectedIndex] : null;
             interaction.acaoTexto = selectedOption ? selectedOption.text : actionSelect.value;
         }
-        interaction.nomeElemento = nomeInput.value.trim() || interaction.nomeElemento;
+        if (interaction.acao === 'valida_url') {
+            interaction.urlEsperada = nomeInput.value.trim() || interaction.urlEsperada;
+        } else {
+            interaction.nomeElemento = nomeInput.value.trim() || interaction.nomeElemento;
+        }
         if (interaction.acao === 'upload' && fileInput) {
             interaction.nomeArquivo = fileInput.value.trim() || interaction.nomeArquivo;
         }
