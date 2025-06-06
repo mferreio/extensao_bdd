@@ -60,37 +60,51 @@ function debounce(func, wait) {
     };
 }
 
+
 function getCSSSelector(element) {
-    if (!element || element.nodeType !== Node.ELEMENT_NODE) return null;
+    // Estrutura de retorno
+    let result = {
+        css: null,
+        tipo: null,
+        aviso: null
+    };
+    const attrPriority = [
+        'data-testid', 'data-qa', 'formcontrolname', 'aria-label', 'data-pc-name', 'data-pc-section', 'id', 'name', 'type', 'placeholder', 'href'
+    ];
+    const genericTags = ['div', 'span', 'button', 'input', 'label', 'a', 'ul', 'li', 'tr', 'td', 'th', 'table', 'form', 'section', 'article', 'header', 'footer'];
 
     // 1. Prioridade máxima: atributos robustos e únicos
-    const attrPriority = [
-        'data-testid', 'data-qa', 'formcontrolname', 'aria-label', 'data-pc-name', 'data-pc-section', 'id', 'name', 'type', 'placeholder'
-    ];
     for (const attr of attrPriority) {
         const val = element.getAttribute && element.getAttribute(attr);
         if (val && document.querySelectorAll(`${element.tagName.toLowerCase()}[${attr}="${CSS.escape(val)}"]`).length === 1) {
-            return `${element.tagName.toLowerCase()}[${attr}="${val}"]`;
+            result.css = `${element.tagName.toLowerCase()}[${attr}="${val}"]`;
+            result.tipo = 'robusto';
+            return result;
         }
         if (val && document.querySelectorAll(`[${attr}="${CSS.escape(val)}"]`).length === 1) {
-            return `[${attr}="${val}"]`;
+            result.css = `[${attr}="${val}"]`;
+            result.tipo = 'robusto';
+            return result;
         }
     }
     // 2. Se tem id único e não é dinâmico
     if (element.id && document.querySelectorAll(`#${CSS.escape(element.id)}`).length === 1 && !/^(_|auto|ember|react|ng|mat|p-)/i.test(element.id)) {
-        return `${element.tagName.toLowerCase()}#${element.id}`;
+        result.css = `${element.tagName.toLowerCase()}#${element.id}`;
+        result.tipo = 'robusto';
+        return result;
     }
     // 3. Se tem classe única e não genérica
     if (element.className && typeof element.className === 'string') {
         const classList = element.className.trim().split(/\s+/).filter(Boolean);
         for (const cls of classList) {
-            if (/^(p-|ng-|mat-|ant-|Mui|css-)/.test(cls)) continue; // ignora classes de framework
+            if (/^(p-|ng-|mat-|ant-|Mui|css-)/.test(cls)) continue;
             if (document.querySelectorAll(`.${CSS.escape(cls)}`).length === 1) {
-                return `${element.tagName.toLowerCase()}.${cls}`;
+                result.css = `${element.tagName.toLowerCase()}.${cls}`;
+                result.tipo = 'classe_unica';
+                return result;
             }
         }
     }
-
     // 4. Busca contexto de componente pai relevante (PrimeNG/Angular/React)
     const COMPONENT_TAGS = [
         'p-calendar', 'p-inputnumber', 'p-fileupload', 'p-dropdown', 'p-inputmask', 'p-checkbox', 'p-radiobutton', 'p-inputswitch', 'p-autocomplete', 'p-multiselect', 'p-editor', 'p-slider', 'p-colorpicker', 'p-rating', 'p-cascadeselect', 'p-chips', 'p-password', 'p-inputtext', 'p-listbox', 'p-selectbutton', 'p-togglebutton', 'p-treeselect', 'p-inputgroup', 'mat-form-field', 'mat-select', 'mat-checkbox', 'mat-radio-button', 'mat-slide-toggle', 'mat-slider', 'mat-input', 'mat-autocomplete', 'button', 'input', 'select', 'textarea'
@@ -101,7 +115,6 @@ function getCSSSelector(element) {
     while (parent && depth < 4) {
         const tag = parent.tagName ? parent.tagName.toLowerCase() : '';
         if (COMPONENT_TAGS.includes(tag)) {
-            // Procura atributo robusto no componente pai
             for (const attr of attrPriority) {
                 const val = parent.getAttribute && parent.getAttribute(attr);
                 if (val && document.querySelectorAll(`${tag}[${attr}="${CSS.escape(val)}"]`).length === 1) {
@@ -118,18 +131,76 @@ function getCSSSelector(element) {
         depth++;
     }
     if (parentSelector) {
-        // Se o elemento também tem atributo robusto, compõe
         for (const attr of attrPriority) {
             const val = element.getAttribute && element.getAttribute(attr);
             if (val && document.querySelectorAll(`${parentSelector} ${element.tagName.toLowerCase()}[${attr}="${CSS.escape(val)}"]`).length === 1) {
-                return `${parentSelector} ${element.tagName.toLowerCase()}[${attr}="${val}"]`;
+                result.css = `${parentSelector} ${element.tagName.toLowerCase()}[${attr}="${val}"]`;
+                result.tipo = 'componente_pai';
+                return result;
             }
         }
-        // Caso contrário, retorna seletor composto
-        return `${parentSelector} ${element.tagName.toLowerCase()}`;
+        result.css = `${parentSelector} ${element.tagName.toLowerCase()}`;
+        result.tipo = 'componente_pai';
+        return result;
     }
-
-    // 5. Fallback: monta caminho hierárquico curto (até 2 níveis de parent com id estável)
+    // 5. Procura ancestral robusto
+    let ancestor = element.parentElement;
+    let ancestorSelector = '';
+    let ancestorDepth = 0;
+    while (ancestor && ancestorDepth < 4) {
+        for (const attr of attrPriority) {
+            const val = ancestor.getAttribute && ancestor.getAttribute(attr);
+            if (val && document.querySelectorAll(`${ancestor.tagName.toLowerCase()}[${attr}="${CSS.escape(val)}"]`).length === 1) {
+                ancestorSelector = `${ancestor.tagName.toLowerCase()}[${attr}="${val}"]`;
+                break;
+            }
+        }
+        if (ancestorSelector) break;
+        ancestor = ancestor.parentElement;
+        ancestorDepth++;
+    }
+    if (ancestorSelector) {
+        for (const attr of attrPriority) {
+            const val = element.getAttribute && element.getAttribute(attr);
+            if (val && document.querySelectorAll(`${ancestorSelector} ${element.tagName.toLowerCase()}[${attr}="${CSS.escape(val)}"]`).length === 1) {
+                result.css = `${ancestorSelector} ${element.tagName.toLowerCase()}[${attr}="${val}"]`;
+                result.tipo = 'ancestral';
+                return result;
+            }
+        }
+        const siblings = Array.from(ancestor.querySelectorAll(element.tagName.toLowerCase()));
+        if (siblings.length > 1) {
+            const idx = siblings.indexOf(element) + 1;
+            if (idx > 0) {
+                result.css = `${ancestorSelector} ${element.tagName.toLowerCase()}:nth-of-type(${idx})`;
+                result.tipo = 'ancestral';
+                return result;
+            }
+        } else if (siblings.length === 1) {
+            result.css = `${ancestorSelector} ${element.tagName.toLowerCase()}`;
+            result.tipo = 'ancestral';
+            return result;
+        }
+    }
+    // 6. Fallback: tenta compor seletor hierárquico até 3 níveis
+    let chain = element.tagName.toLowerCase();
+    let p = element.parentElement;
+    let d = 0;
+    while (p && d < 3) {
+        chain = `${p.tagName.toLowerCase()} > ${chain}`;
+        p = p.parentElement;
+        d++;
+    }
+    if (!genericTags.includes(chain) && !/^([a-z]+)(\s*[> ]\s*[a-z]+)?$/i.test(chain)) {
+        result.css = chain;
+        result.tipo = 'hierarquico';
+        return result;
+    }
+    if (!element || element.nodeType !== Node.ELEMENT_NODE) {
+        result.aviso = 'Elemento inválido.';
+        return result;
+    }
+    // 7. Seletor genérico
     let path = element.tagName.toLowerCase();
     parent = element.parentElement;
     depth = 0;
@@ -141,46 +212,55 @@ function getCSSSelector(element) {
         parent = parent.parentElement;
         depth++;
     }
-    // Se o seletor final for apenas uma tag ou muito genérico, emite aviso e retorna null
-    const genericTags = ['div', 'span', 'button', 'input', 'label', 'a', 'ul', 'li', 'tr', 'td', 'th', 'table', 'form', 'section', 'article', 'header', 'footer'];
-    // Verifica se é apenas uma tag ou um seletor muito curto
     if (genericTags.includes(path) || /^([a-z]+)(\s*[> ]\s*[a-z]+)?$/i.test(path)) {
         const msg = `Atenção: seletor CSS genérico detectado ('${path}'). Adicione um atributo único (ex: data-testid) ao elemento para garantir robustez nos testes.`;
+        result.aviso = msg;
+        result.tipo = 'generico';
+        result.css = null;
         if (typeof showFeedback === 'function') {
             showFeedback(msg, 'error');
         }
         if (typeof console !== 'undefined') {
             console.warn(msg);
         }
-        return null;
+        return result;
     }
-    return path;
+    result.css = path;
+    result.tipo = 'generico';
+    return result;
 }
 
-function getRobustXPath(element) {
-    if (!element || element.nodeType !== Node.ELEMENT_NODE) return null;
 
-    // 1. id único e estável
-    if (element.id && document.querySelectorAll(`#${CSS.escape(element.id)}`).length === 1 && !/^(_|auto|ember|react|ng|mat|p-)/i.test(element.id)) {
-        return `//*[@id="${element.id}"]`;
-    }
-    // 2. Atributos robustos e únicos
+function getRobustXPath(element) {
+    let result = {
+        xpath: null,
+        tipo: null,
+        aviso: null
+    };
     const attrs = [
         'data-testid', 'data-qa', 'formcontrolname', 'aria-label', 'data-pc-name', 'data-pc-section', 'name', 'type', 'placeholder', 'title', 'role'
     ];
+    // 1. id único e estável
+    if (element.id && document.querySelectorAll(`#${CSS.escape(element.id)}`).length === 1 && !/^(_|auto|ember|react|ng|mat|p-)/i.test(element.id)) {
+        result.xpath = `//*[@id="${element.id}"]`;
+        result.tipo = 'robusto';
+        return result;
+    }
+    // 2. Atributos robustos e únicos
     for (const attr of attrs) {
         const val = element.getAttribute && element.getAttribute(attr);
-        // Para XPath, use apenas document.evaluate para unicidade!
         if (val) {
             const xpath = `//${element.tagName.toLowerCase()}[@${attr}='${val}']`;
             try {
                 if (document.evaluate(`count(${xpath})`, document, null, XPathResult.NUMBER_TYPE, null).numberValue === 1) {
-                    return xpath;
+                    result.xpath = xpath;
+                    result.tipo = 'robusto';
+                    return result;
                 }
             } catch (e) { /* ignora erro de XPath inválido */ }
         }
     }
-    // 3. Composição com componente pai robusto
+    // 3. Componente pai robusto
     const COMPONENT_TAGS = [
         'p-calendar', 'p-inputnumber', 'p-fileupload', 'p-dropdown', 'p-inputmask', 'p-checkbox', 'p-radiobutton', 'p-inputswitch', 'p-autocomplete', 'p-multiselect', 'p-editor', 'p-slider', 'p-colorpicker', 'p-rating', 'p-cascadeselect', 'p-chips', 'p-password', 'p-inputtext', 'p-listbox', 'p-selectbutton', 'p-togglebutton', 'p-treeselect', 'p-inputgroup', 'mat-form-field', 'mat-select', 'mat-checkbox', 'mat-radio-button', 'mat-slide-toggle', 'mat-slider', 'mat-input', 'mat-autocomplete', 'button', 'input', 'select', 'textarea'
     ];
@@ -217,26 +297,96 @@ function getRobustXPath(element) {
                 const fullXpath = `${parentXPath}//${element.tagName.toLowerCase()}[@${attr}='${val}']`;
                 try {
                     if (document.evaluate(`count(${fullXpath})`, document, null, XPathResult.NUMBER_TYPE, null).numberValue === 1) {
-                        return fullXpath;
+                        result.xpath = fullXpath;
+                        result.tipo = 'componente_pai';
+                        return result;
                     }
                 } catch (e) { /* ignora erro de XPath inválido */ }
             }
         }
-        return `${parentXPath}//${element.tagName.toLowerCase()}`;
+        result.xpath = `${parentXPath}//${element.tagName.toLowerCase()}`;
+        result.tipo = 'componente_pai';
+        return result;
     }
-
-    // 4. Classe única e não genérica
+    // 4. Ancestral robusto
+    let ancestor = element.parentElement;
+    let ancestorXPath = '';
+    let ancestorDepth = 0;
+    while (ancestor && ancestorDepth < 4) {
+        for (const attr of attrs) {
+            const val = ancestor.getAttribute && ancestor.getAttribute(attr);
+            if (val) {
+                const xpath = `//${ancestor.tagName.toLowerCase()}[@${attr}='${val}']`;
+                try {
+                    if (document.evaluate(`count(${xpath})`, document, null, XPathResult.NUMBER_TYPE, null).numberValue === 1) {
+                        ancestorXPath = xpath;
+                        break;
+                    }
+                } catch (e) { /* ignora erro de XPath inválido */ }
+            }
+        }
+        if (ancestorXPath) break;
+        ancestor = ancestor.parentElement;
+        ancestorDepth++;
+    }
+    if (ancestorXPath) {
+        for (const attr of attrs) {
+            const val = element.getAttribute && element.getAttribute(attr);
+            if (val) {
+                const fullXpath = `${ancestorXPath}//${element.tagName.toLowerCase()}[@${attr}='${val}']`;
+                try {
+                    if (document.evaluate(`count(${fullXpath})`, document, null, XPathResult.NUMBER_TYPE, null).numberValue === 1) {
+                        result.xpath = fullXpath;
+                        result.tipo = 'ancestral';
+                        return result;
+                    }
+                } catch (e) { /* ignora erro de XPath inválido */ }
+            }
+        }
+        const siblings = Array.from(ancestor.querySelectorAll(element.tagName.toLowerCase()));
+        if (siblings.length > 1) {
+            const idx = siblings.indexOf(element) + 1;
+            if (idx > 0) {
+                result.xpath = `${ancestorXPath}//${element.tagName.toLowerCase()}[${idx}]`;
+                result.tipo = 'ancestral';
+                return result;
+            }
+        } else if (siblings.length === 1) {
+            result.xpath = `${ancestorXPath}//${element.tagName.toLowerCase()}`;
+            result.tipo = 'ancestral';
+            return result;
+        }
+    }
+    // 5. Classe única e não genérica
     if (element.className && typeof element.className === 'string') {
         const classList = element.className.trim().split(/\s+/).filter(Boolean);
         for (const cls of classList) {
             if (/^(p-|ng-|mat-|ant-|Mui|css-)/.test(cls)) continue;
             if (document.evaluate(`count(//${element.tagName.toLowerCase()}[contains(concat(' ',normalize-space(@class),' '),' ${cls} ')])`, document, null, XPathResult.NUMBER_TYPE, null).numberValue === 1) {
-                return `//${element.tagName.toLowerCase()}[contains(concat(' ',normalize-space(@class),' '),' ${cls} ')]`;
+                result.xpath = `//${element.tagName.toLowerCase()}[contains(concat(' ',normalize-space(@class),' '),' ${cls} ')]`;
+                result.tipo = 'classe_unica';
+                return result;
             }
         }
     }
-
-    // 5. Caminho relativo curto (até 2 níveis de parent com id estável)
+    // 6. Fallback: XPath por texto visível único
+    if (element.tagName && element.textContent) {
+        const text = element.textContent.trim();
+        if (text && text.length > 0) {
+            const matches = Array.from(document.querySelectorAll(element.tagName.toLowerCase()))
+                .filter(el => el.textContent && el.textContent.trim() === text);
+            if (matches.length === 1) {
+                result.xpath = `//${element.tagName.toLowerCase()}[normalize-space(text())='${text.replace(/'/g, "\'")}']`;
+                result.tipo = 'texto_unico';
+                return result;
+            }
+        }
+    }
+    if (!element || element.nodeType !== Node.ELEMENT_NODE) {
+        result.aviso = 'Elemento inválido.';
+        return result;
+    }
+    // 7. Caminho relativo curto (até 2 níveis de parent com id estável)
     let path = element.tagName.toLowerCase();
     parent = element.parentElement;
     depth = 0;
@@ -248,7 +398,10 @@ function getRobustXPath(element) {
         parent = parent.parentElement;
         depth++;
     }
-    return `//${path}`;
+    result.xpath = `//${path}`;
+    result.tipo = 'generico';
+    result.aviso = 'XPath genérico. Considere adicionar um atributo único ao elemento.';
+    return result;
 }
 
 function isExtensionContextValid() {
@@ -308,4 +461,24 @@ function hideSpinner() {
 window.showSpinner = showSpinner;
 window.hideSpinner = hideSpinner;
 
-export { slugify, downloadFile, showFeedback, debounce, getCSSSelector, getRobustXPath, isExtensionContextValid };
+/**
+ * Função utilitária para obter ambos seletores estruturados para um elemento
+ * @param {Element} element
+ * @returns {{css: string|null, xpath: string|null, tipo: string|null, aviso: string|null}}
+ */
+function getSelectors(element) {
+    const cssResult = getCSSSelector(element);
+    const xpathResult = getRobustXPath(element);
+    // Prioriza aviso de robustez se houver
+    let aviso = cssResult.aviso || xpathResult.aviso || null;
+    // Prioriza tipo robusto se algum for robusto
+    let tipo = cssResult.tipo === 'robusto' || xpathResult.tipo === 'robusto' ? 'robusto' : (cssResult.tipo || xpathResult.tipo);
+    return {
+        css: cssResult.css,
+        xpath: xpathResult.xpath,
+        tipo,
+        aviso
+    };
+}
+
+export { slugify, downloadFile, showFeedback, debounce, getCSSSelector, getRobustXPath, getSelectors, isExtensionContextValid };

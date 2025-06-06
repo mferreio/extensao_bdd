@@ -1149,8 +1149,8 @@ function exportLog(format = 'csv') {
                     `"${i.nomeElemento || ''}"`,
                     `"${i.valorPreenchido || i.nomeArquivo || ''}"`,
                     i.timestamp || '',
-                    `"${i.cssSelector || ''}"`,
-                    `"${i.xpath || ''}"`
+                    `"${(i.cssSelector && typeof i.cssSelector === 'object' ? i.cssSelector.css : i.cssSelector) || ''}"`,
+                    `"${(i.xpath && typeof i.xpath === 'object' ? i.xpath.xpath : i.xpath) || ''}"`
                 ].join(',')
             ).join('\n');
         downloadFile('gherkin_log.csv', content);
@@ -1550,8 +1550,8 @@ function showLogDetailsModal(interaction) {
     const details = [
         ['Nome do elemento', interaction.nomeElemento || ''],
         ['Valor preenchido', interaction.valorPreenchido || interaction.nomeArquivo || ''],
-        ['Selector CSS', interaction.cssSelector || ''],
-        ['XPath', interaction.xpath || ''],
+        ['Selector CSS', (interaction.cssSelector && typeof interaction.cssSelector === 'object' ? interaction.cssSelector.css : interaction.cssSelector) || ''],
+        ['XPath', (interaction.xpath && typeof interaction.xpath === 'object' ? interaction.xpath.xpath : interaction.xpath) || ''],
         ['Timestamp', interaction.timestamp ? new Date(interaction.timestamp).toLocaleString() : ''],
         ['Texto do passo', interaction.stepText || ''],
     ];

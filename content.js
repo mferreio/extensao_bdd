@@ -567,8 +567,8 @@ document.addEventListener('click', (event) => {
 
         // Se for input file, abre modal para upload de exemplo
         if (event.target.tagName === 'INPUT' && event.target.type === 'file') {
-            const cssSelector = getCSSSelector(event.target);
-            const xpath = getRobustXPath(event.target);
+            const cssSelector = getCSSSelector(event.target)?.css;
+            const xpath = getRobustXPath(event.target)?.xpath;
             let nomeElemento = (event.target.getAttribute('aria-label') || event.target.getAttribute('name') || event.target.id || event.target.className || event.target.tagName).toString().trim();
             if (!nomeElemento) nomeElemento = event.target.tagName;
             if (typeof window.showUploadModal === 'function') {
@@ -677,8 +677,8 @@ document.addEventListener('click', (event) => {
             if (found) targetForValue = found;
         }
 
-        const cssSelector = getCSSSelector(targetForValue);
-        const xpath = getRobustXPath(targetForValue);
+        const cssSelector = getCSSSelector(targetForValue)?.css;
+        const xpath = getRobustXPath(targetForValue)?.xpath;
 
         // Para nomeElemento, priorize aria-label, name, id, class, tag, mas nunca o valor preenchido
         let nomeElemento = (
@@ -744,8 +744,8 @@ document.addEventListener('click', (event) => {
                 inputs.forEach(input => {
                     const type = input.getAttribute('type') || '';
                     const name = (input.getAttribute('name') || '').toLowerCase();
-                    if (!userField && (type === 'text' || type === 'email' || name.includes('user') || name.includes('email'))) userField = getCSSSelector(input);
-                    if (!passField && (type === 'password' || name.includes('senha') || name.includes('password'))) passField = getCSSSelector(input);
+                    if (!userField && (type === 'text' || type === 'email' || name.includes('user') || name.includes('email'))) userField = getCSSSelector(input)?.css;
+                    if (!passField && (type === 'password' || name.includes('senha') || name.includes('password'))) passField = getCSSSelector(input)?.css;
                 });
             }
             getConfig((config) => {
@@ -889,8 +889,8 @@ function handleInputEvent(event) {
                     }
                     // Se for keydown, só registra se for Tab
                     if (ev.type === 'keydown' && ev.key !== 'Tab') return;
-                    const cssSelector = getCSSSelector(target);
-                    const xpath = typeof getRobustXPath === 'function' ? getRobustXPath(target) : '';
+                    const cssSelector = getCSSSelector(target)?.css;
+                    const xpath = typeof getRobustXPath === 'function' ? getRobustXPath(target)?.xpath : '';
                     // Busca nome amigável do elemento (prioridade: label visível > aria-label > placeholder > name > id > texto visível > tag)
                     let nomeElemento = '';
                     // 1. Label associada via for
@@ -937,7 +937,7 @@ function handleInputEvent(event) {
                 let parentSelector = '';
                 let parent = target.closest && (target.closest('tr') || target.closest('tbody') || target.closest('table'));
                 if (parent) {
-                    parentSelector = getCSSSelector(parent);
+                    parentSelector = getCSSSelector(parent)?.css;
                     // Índice da linha (sempre que possível)
                     let rowIdx = null;
                     if (parent.tagName === 'TR') {
@@ -1043,8 +1043,8 @@ function handleInputEvent(event) {
                                 const input = target.querySelector('input.p-inputnumber-input, input.p-inputtext');
                                 if (input) target = input;
                             }
-                            const cssSelector = getCSSSelector(target);
-                            const xpath = typeof getRobustXPath === 'function' ? getRobustXPath(target) : '';
+                            const cssSelector = getCSSSelector(target)?.css;
+                            const xpath = typeof getRobustXPath === 'function' ? getRobustXPath(target)?.xpath : '';
                             let nomeElemento = '';
                             if (target.id) {
                                 const label = document.querySelector('label[for="' + target.id + '"]');
@@ -1105,7 +1105,7 @@ function handleInputEvent(event) {
                             let parentSelector = '';
                             let parent = target.closest && (target.closest('tr') || target.closest('tbody') || target.closest('table'));
                             if (parent) {
-                                parentSelector = getCSSSelector(parent);
+                                parentSelector = getCSSSelector(parent)?.css;
                             }
                             window.interactions.push({
                                 step,
