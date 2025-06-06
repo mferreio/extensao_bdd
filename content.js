@@ -599,6 +599,26 @@ document.addEventListener('click', (event) => {
         const actionSelect = document.getElementById('gherkin-action-select');
         let acao = actionSelect ? actionSelect.options[actionSelect.selectedIndex].text : 'Clicar';
         let acaoValue = actionSelect ? actionSelect.value : 'clica';
+
+        // --- NOVO: Valida URL da página ---
+        if (acaoValue === 'valida_url') {
+            const urlAtual = window.location.href;
+            getConfig((config) => {
+                const template = config && config.templateValidaUrl ? config.templateValidaUrl : 'Then valida que a URL da página é "{url}"';
+                const stepText = template.replace('{url}', urlAtual);
+                window.interactions.push({
+                    step: 'Then',
+                    acao: 'valida_url',
+                    acaoTexto: 'Validar URL',
+                    urlEsperada: urlAtual,
+                    stepText,
+                    timestamp: Date.now()
+                });
+                renderLogWithActions();
+            });
+            return;
+        }
+
         if (acaoValue === 'preenche') {
             const found = findFillableDescendant(event.target);
             if (found) targetForValue = found;
@@ -1087,6 +1107,14 @@ function exportSelectedFeatures(selectedIdxs) {
                             continue;
                         }
                     }
+                    // --- Exporta valida_url ---
+                    if (interaction.acao === 'valida_url') {
+                        let frase = `valida que a URL da página é "${interaction.urlEsperada}"`;
+                        let stepLabel = step.charAt(0).toUpperCase() + step.slice(1).toLowerCase();
+                        featureText += `    ${stepLabel} ${frase}\n`;
+                        i++;
+                        continue;
+                    }
                     // Exporta normalmente para outras ações
                     let frase = '';
                     if (step === 'Given' && interaction.acao === 'acessa_url' && interaction.nomeElemento && interaction.nomeElemento.startsWith('http')) {
@@ -1166,6 +1194,7 @@ Esta feature cobre o(s) seguinte(s) cenário(s):\n
             readme += `- Prints das telas podem ser adicionados manualmente após a execução dos testes.\n`;
             readme += `- Consulte os arquivos \`pages.py\`, \`steps.py\` e \`environment.py\` para customizações avançadas.\n`;
 
+            // Gera arquivo README para cada feature
             const filename = `README_${feature.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
             downloadFile(filename, readme);
 
@@ -1314,6 +1343,7 @@ class Page${slugify(feature.name, true)}:
                 raise
         raise Exception(f"Não foi possível preencher o campo {locator} após {tentativas} tentativas devido a StaleElementReferenceException. Último erro: {ultimo_erro}")
 
+
     def selecionar(self, locator, valor, tentativas=3, espera=1):
         """
         Seleciona o valor informado em um campo select identificado pelo locator, com retry automático em caso de StaleElementReferenceException e espera explícita para estar presente.
@@ -1344,6 +1374,7 @@ class Page${slugify(feature.name, true)}:
                 raise
         raise Exception(f"Não foi possível selecionar o valor '{valor}' em {locator} após {tentativas} tentativas devido a StaleElementReferenceException. Último erro: {ultimo_erro}")
 
+
     def upload_arquivo(self, locator, caminho_arquivo, tentativas=3, espera=1):
         """
         Realiza upload de arquivo no campo identificado pelo locator, com retry automático em caso de StaleElementReferenceException e espera explícita para estar visível.
@@ -1373,6 +1404,7 @@ class Page${slugify(feature.name, true)}:
                 raise
         raise Exception(f"Não foi possível fazer upload do arquivo '{caminho_arquivo}' em {locator} após {tentativas} tentativas devido a StaleElementReferenceException. Último erro: {ultimo_erro}")
 
+
     def esperar_elemento(self, locator, timeout=None):
         """
         Aguarda até que o elemento esteja presente na tela.
@@ -1397,567 +1429,149 @@ class Page${slugify(feature.name, true)}:
         try:
             from selenium.webdriver.support.ui import WebDriverWait
             from selenium.webdriver.support import expected_conditions as EC
-            WebDriverWait(self.driver, timeout).until_not(EC.presence_of_element_located(locator))
+            WebDriverWait(self.driver, timeout).until(EC.invisibility_of_element_located(locator))
             print(f"[INFO] Elemento {locator} desapareceu da tela (timeout={timeout}s).")
         except TimeoutException as e:
-            print(f"[ERRO] Timeout ao esperar desaparecimento do elemento {locator}: {e}")
+            print(f"[ERRO] Timeout ao esperar elemento {locator} desaparecer: {e}")
             raise
 
-    def validar_existencia(self, locator):
-        """
-        Valida se o elemento identificado pelo locator existe na página.
-        """
-        try:
-            self.driver.find_element(*locator)
-            print(f"[INFO] Elemento {locator} existe na página.")
-            return True
-        except NoSuchElementException:
-            print(f"[INFO] Elemento {locator} não existe na página.")
-            return False
-
-    def espera_segundos(self, tempo=None):
-        """
-        Aguarda o tempo informado em segundos (ou o timeout padrão se não informado).
-        """
-        tempo = int(tempo) if tempo is not None else self.default_timeout
-        import time
-        print(f"[INFO] Esperando {tempo} segundos...")
-        time.sleep(tempo)
-        print(f"[INFO] Espera de {tempo} segundos finalizada.")
-
-    # Adicione outros métodos genéricos conforme necessário
 `;
-
-            downloadFile(`${featureSlug}_pages.py`, pagesPy);
-
+            downloadFile(`pages_${featureSlug}.py`, pagesPy);
 
 
-            // --- steps.py gerado automaticamente e dinamicamente ---
-            function getLocatorName(interaction) {
-                // Mesmo padrão do locatorSet, agora substitui hífens por underscores
-                let locatorName = '';
-                if (interaction.nomeElemento) {
-                    locatorName = interaction.nomeElemento
-                        .split('|')[0]
-                        .replace(/-/g, '_') // substitui hífens por underscores
-                        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                        .replace(/[^a-zA-Z0-9_]/g, '_')
-                        .replace(/_+/g, '_')
-                        .replace(/^_+|_+$/g, '')
-                        .replace(/^[0-9]+/, '')
-                        .toUpperCase();
-                }
-                if (!locatorName) locatorName = 'ELEMENTO_' + Math.random().toString(36).substring(2, 8).toUpperCase();
-                return locatorName;
-            }
-
-            let stepsPy = `# ${feature.name}_steps.py gerado automaticamente\n`;
-            stepsPy += `# -*- coding: utf-8 -*-\n"""\nArquivo de steps do Behave para a feature "${feature.name}".\nUtiliza Page Object Model e locators definidos em pages.py.\n"""\n\n`;
-            stepsPy += `from behave import given, when, then\n`;
-            stepsPy += `from pages.${feature.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_pages import Page${slugify(feature.name, true)}, Locators${slugify(feature.name, true)}\n\n`;
-
-            // Step para inicializar o Page Object
-            stepsPy += `@given('que o usuário acessa a página "{url}"')\ndef step_acessa_pagina_inicial(context, url):\n    context.page = Page${slugify(feature.name, true)}(context.driver)\n    context.page.acessar_url(url)\n\n`;
-
-
-            // --- Agrupamento de steps "preenche" com DataTable ---
-            let usedLocators = new Set();
-            let datatableStepEmitted = false;
-            (feature.cenarios || []).forEach((cenario, cIdx) => {
-                const interactions = cenario.interactions || [];
-                let i = 0;
-                while (i < interactions.length) {
-                    const interaction = interactions[i];
-                    // Detecta agrupamento de "preenche" do mesmo contexto
-                    if (interaction.acao === 'preenche') {
-                        const group = [];
-                        const parentSelector = interaction.parentSelector || '';
-                        let j = i;
-                        while (
-                            j < interactions.length &&
-                            interactions[j].acao === 'preenche' &&
-                            (interactions[j].parentSelector || '') === parentSelector
-                        ) {
-                            group.push(interactions[j]);
-                            j++;
-                        }
-                        if (group.length > 1 && !datatableStepEmitted) {
-                            // Step único para DataTable, com validação, prints e tratamento de exceções
-                            stepsPy += `# Step que preenche múltiplos campos de uma tabela Gherkin usando DataTable\n`;
-                            stepsPy += `@when('preencho os campos da tabela:')\ndef step_preencho_campos_tabela(context):\n    """Preenche múltiplos campos usando DataTable do Gherkin.\n    Cada linha da tabela deve conter as colunas 'Campo' e 'Valor'.\n    Se o campo não existir nos locators, lança uma exceção para facilitar o debug.\n    """\n    print('[STEP] Iniciando: step_preencho_campos_tabela')\n    try:\n        for row in context.table:\n            campo = row['Campo']\n            valor = row['Valor']\n            try:\n                locator = getattr(Locators${slugify(feature.name, true)}, campo.replace(' ', '_').upper())\n            except AttributeError:\n                raise Exception(f"Locator não encontrado para o campo: {campo}")\n            context.page.preencher(locator, valor)\n        print('[STEP] Sucesso: step_preencho_campos_tabela')\n    except Exception as e:\n        print(f'[ERRO] Falha no step step_preencho_campos_tabela: {e}')\n        raise\n\n`;
-                            datatableStepEmitted = true;
-                            i = j;
-                            continue;
-                        } else if (group.length === 1) {
-                            // Step individual padrão, com comentário
-                            let item = group[0];
-                            let locatorName = getLocatorName(item);
-                            if (!locatorSet.has(locatorName)) {
-                                i++;
-                                continue;
-                            }
-                            const stepKey = `preenche|${locatorName}|${item.stepText || ''}|${item.nomeElemento || ''}`;
-                            if (usedLocators.has(stepKey)) {
-                                i++;
-                                continue;
-                            }
-                            usedLocators.add(stepKey);
-                            // Step genérico parametrizado para preencher qualquer campo
-                            let frase = 'o usuário preenche o campo "{campo}" com "{valor}"';
-                            let decorator = (item.step === 'Given') ? '@given' : (item.step === 'Then' ? '@then' : '@when');
-                            let funcName = `step_preenche_generico`;
-                            if (!stepsPy.includes(`def ${funcName}(`)) {
-                                stepsPy += `# Step genérico que preenche qualquer campo informado por nome\n`;
-                                stepsPy += `${decorator}('${frase}')\ndef ${funcName}(context, campo, valor):\n    """Preenche o campo informado pelo nome (campo) com o valor informado."""\n    print(f"[STEP] Iniciando: ${funcName} (campo={campo}, valor={valor})")\n    try:\n        if not hasattr(context, "driver") or context.driver is None:\n            raise Exception('O context.driver não está inicializado. Verifique o ambiente de execução do Selenium.')\n        if not hasattr(context, "page"):\n            context.page = Page${slugify(feature.name, true)}(context.driver)\n        try:\n            locator = getattr(Locators${slugify(feature.name, true)}, campo.replace(' ', '_').upper())\n        except AttributeError:\n            raise Exception(f"Locator não encontrado para o campo: {campo}")\n        context.page.preencher(locator, valor)\n        print(f"[STEP] Sucesso: ${funcName}")\n    except Exception as e:\n        print(f"[ERRO] Falha no step ${funcName}: {e}")\n        raise\n\n`;
-                            }
-                            i++;
-                            continue;
-                            i++;
-                            continue;
-                        } else {
-                            i = j;
-                            continue;
-                        }
-                    }
-                    // Outras ações
-                    let locatorName = getLocatorName(interaction);
-                    if (!locatorSet.has(locatorName)) {
-                        i++;
-                        continue;
-                    }
-                    const stepKey = `${interaction.acao}|${locatorName}|${interaction.stepText || ''}|${interaction.nomeElemento || ''}`;
-                    if (usedLocators.has(stepKey)) {
-                        i++;
-                        continue;
-                    }
-                    usedLocators.add(stepKey);
-                    let decorator = '';
-                    let funcName = '';
-                    let body = '';
-                    let frase = '';
-                    let params = '';
-                    if (interaction.stepText) {
-                        frase = interaction.stepText;
-                    } else if (interaction.acao === 'clica') {
-                        frase = `o usuário clica no elemento ${interaction.nomeElemento ? '"' + interaction.nomeElemento + '"' : ''}`;
-                    } else if (interaction.acao === 'upload') {
-                        frase = `o usuário faz upload do arquivo "{arquivo}" no campo ${interaction.nomeElemento ? '"' + interaction.nomeElemento + '"' : ''}`;
-                    } else if (interaction.acao === 'espera_elemento') {
-                        frase = `o usuário espera o elemento ${interaction.nomeElemento ? '"' + interaction.nomeElemento + '"' : ''} aparecer`;
-                    } else if (interaction.acao === 'espera_segundos') {
-                        frase = `o usuário espera ${interaction.tempoEspera || '{segundos}'} segundos`;
-                    } else if (interaction.acao && interaction.acao.toLowerCase().includes('valida')) {
-                        frase = `o usuário valida que existe o elemento ${interaction.nomeElemento ? '"' + interaction.nomeElemento + '"' : ''}`;
-                    } else {
-                        frase = `${interaction.acaoTexto || interaction.acao || 'ação'} no elemento ${interaction.nomeElemento ? '"' + interaction.nomeElemento + '"' : ''}`;
-                    }
-                    if (interaction.step === 'Given') decorator = '@given';
-                    else if (interaction.step === 'Then') decorator = '@then';
-                    else decorator = '@when';
-                    funcName = `step_${interaction.acao}_${locatorName}_${cIdx}_${i}`;
-                    if (interaction.acao === 'upload') {
-                        if (Array.isArray(interaction.nomesArquivos) && interaction.nomesArquivos.length > 1) {
-                            params = 'context';
-                            body = `    print(f"[STEP] Iniciando: ${funcName} (arquivos={getattr(context, 'nomes_arquivos', None)})")\n    try:\n        if not hasattr(context, "driver") or context.driver is None:\n            raise Exception('O context.driver não está inicializado. Verifique o ambiente de execução do Selenium.')\n        if not hasattr(context, "page"):\n            context.page = Page${slugify(feature.name, true)}(context.driver)\n        nomes_arquivos = getattr(context, 'nomes_arquivos', ${JSON.stringify(interaction.nomesArquivos)})\n        if not nomes_arquivos:\n            nomes_arquivos = ${JSON.stringify(interaction.nomesArquivos)}\n        for arquivo in nomes_arquivos:\n            context.page.upload_arquivo(Locators${slugify(feature.name, true)}.${locatorName}, arquivo)\n            print(f"[STEP] Upload realizado: {arquivo}")\n        print(f"[STEP] Sucesso: ${funcName}")\n    except Exception as e:\n        print(f"[ERRO] Falha no step ${funcName}: {e}")\n        raise`;
-                        } else {
-                            params = 'context, arquivo';
-                            body = `    print(f"[STEP] Iniciando: ${funcName} (arquivo={arquivo})")\n    try:\n        if not hasattr(context, "driver") or context.driver is None:\n            raise Exception('O context.driver não está inicializado. Verifique o ambiente de execução do Selenium.')\n        if not hasattr(context, "page"):\n            context.page = Page${slugify(feature.name, true)}(context.driver)\n        context.page.upload_arquivo(Locators${slugify(feature.name, true)}.${locatorName}, arquivo)\n        print(f"[STEP] Sucesso: ${funcName}")\n    except Exception as e:\n        print(f"[ERRO] Falha no step ${funcName}: {e}")\n        raise`;
-                        }
-                    } else if (interaction.acao === 'espera_segundos') {
-                        // Step aceita parâmetro de tempo
-                        params = 'context, tempo';
-                        body = `    print(f"[STEP] Iniciando: ${funcName} (tempo={tempo})")\n    try:\n        if not hasattr(context, "driver") or context.driver is None:\n            raise Exception('O context.driver não está inicializado. Verifique o ambiente de execução do Selenium.')\n        if not hasattr(context, "page"):\n            context.page = Page${slugify(feature.name, true)}(context.driver)\n        context.page.espera_segundos(int(tempo))\n        print(f"[STEP] Sucesso: ${funcName}")\n    except Exception as e:\n        print(f"[ERRO] Falha no step ${funcName}: {e}")\n        raise`;
-                    } else if (interaction.acao === 'espera_elemento') {
-                        // Step aceita parâmetro de timeout
-                        params = 'context, timeout=10';
-                        body = `    print(f"[STEP] Iniciando: ${funcName} (timeout={timeout})")\n    try:\n        if not hasattr(context, "driver") or context.driver is None:\n            raise Exception('O context.driver não está inicializado. Verifique o ambiente de execução do Selenium.')\n        if not hasattr(context, "page"):\n            context.page = Page${slugify(feature.name, true)}(context.driver)\n        context.page.esperar_elemento(Locators${slugify(feature.name, true)}.${locatorName}, int(timeout))\n        print(f"[STEP] Sucesso: ${funcName}")\n    except Exception as e:\n        print(f"[ERRO] Falha no step ${funcName}: {e}")\n        raise`;
-                    } else if (interaction.acao === 'espera_nao_existe' || interaction.acao === 'espera_elemento_desaparecer') {
-                        // Step aceita parâmetro de timeout
-                        params = 'context, timeout=10';
-                        body = `    print(f"[STEP] Iniciando: ${funcName} (timeout={timeout})")\n    try:\n        if not hasattr(context, "driver") or context.driver is None:\n            raise Exception('O context.driver não está inicializado. Verifique o ambiente de execução do Selenium.')\n        if not hasattr(context, "page"):\n            context.page = Page${slugify(feature.name, true)}(context.driver)\n        context.page.esperar_elemento_desaparecer(Locators${slugify(feature.name, true)}.${locatorName}, int(timeout))\n        print(f"[STEP] Sucesso: ${funcName}")\n    except Exception as e:\n        print(f"[ERRO] Falha no step ${funcName}: {e}")\n        raise`;
-                    } else if (interaction.acao === 'clica') {
-                        params = 'context';
-                        body = `    print(f"[STEP] Iniciando: ${funcName}")\n    try:\n        if not hasattr(context, "driver") or context.driver is None:\n            raise Exception('O context.driver não está inicializado. Verifique o ambiente de execução do Selenium.')\n        if not hasattr(context, "page"):\n            context.page = Page${slugify(feature.name, true)}(context.driver)\n        context.page.clicar(Locators${slugify(feature.name, true)}.${locatorName})\n        print(f"[STEP] Sucesso: ${funcName}")\n    except Exception as e:\n        print(f"[ERRO] Falha no step ${funcName}: {e}")\n        raise`;
-                    } else if (interaction.acao && interaction.acao.toLowerCase().includes('valida')) {
-                        params = 'context';
-                        body = `    print(f"[STEP] Iniciando: ${funcName}")\n    try:\n        if not hasattr(context, "driver") or context.driver is None:\n            raise Exception('O context.driver não está inicializado. Verifique o ambiente de execução do Selenium.')\n        if not hasattr(context, "page"):\n            context.page = Page${slugify(feature.name, true)}(context.driver)\n        assert context.page.validar_existencia(Locators${slugify(feature.name, true)}.${locatorName})\n        print(f"[STEP] Sucesso: ${funcName}")\n    except Exception as e:\n        print(f"[ERRO] Falha no step ${funcName}: {e}")\n        raise\n`;
-                    } else {
-                        params = 'context';
-                        body = `    print(f"[STEP] Iniciando: ${funcName}")\n    try:\n        # Implemente a ação '${interaction.acaoTexto || interaction.acao}' para o locator '${locatorName}'\n        print(f"[STEP] Sucesso: ${funcName}")\n    except Exception as e:\n        print(f"[ERRO] Falha no step ${funcName}: {e}")\n        raise`;
-                    }
-                    stepsPy += `${decorator}('${frase}')\ndef ${funcName}(${params}):\n${body}\n\n`;
-                    i++;
-                }
-            });
-
-            stepsPy += `# Adicione outros steps conforme necessário, usando os métodos e locators definidos em pages.py\n`;
-
-            downloadFile(`${feature.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_steps.py`, stepsPy);
-
-            // --- environment.py com docstrings e comentários ---
-            const environmentPy = `# environment.py gerado automaticamente para a feature "${feature.name}"
+            // --- steps.py com tratamento de exceções e logs aprimorados ---
+            const stepsPy = `# ${featureSlug}_steps.py gerado automaticamente para a feature "${feature.name}"
 # -*- coding: utf-8 -*-
 """
-Arquivo de configuração do Behave para a feature "${feature.name}".
-Responsável por inicializar e finalizar o driver do Selenium, além de capturar screenshots em caso de falha.
+Steps do Behave para a feature "${feature.name}".
+Contém as definições dos passos (steps) utilizados nos testes automatizados.
+Inclui tratamento de exceções e logs aprimorados.
 """
 
-import os
+from behave import given, when, then
 import logging
-from selenium import webdriver
-from selenium.common.exceptions import WebDriverException
-from webdriver_manager.chrome import ChromeDriverManager
-from webdriver_manager.firefox import GeckoDriverManager
-from webdriver_manager.microsoft import EdgeChromiumDriverManager
+
+# Configuração do logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = logging.FileHandler('gherkin_tests.log')
+handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+logger.addHandler(handler)
+
+@given('que o usuário acessa a página "{url}"')
+def step_acessa_url(context, url):
+    """
+    Passo dado para acessar uma URL.
+    """
+    try:
+        context.page.acessar_url(url)
+        logger.info(f"Acessou a URL: {url}")
+    except Exception as e:
+        logger.error(f"Erro ao acessar a URL {url}: {e}")
+        raise
+
+@when('o usuário clica no elemento {elemento}')
+def step_clica_elemento(context, elemento):
+    """
+    Passo quando para clicar em um elemento.
+    """
+    try:
+        locator = getattr(context.page, f"LOC_{elemento.upper()}", None)
+        if locator is None:
+            raise Exception(f"Locator para o elemento '{elemento}' não encontrado.")
+        context.page.clicar(locator)
+        logger.info(f"Clicou no elemento: {elemento}")
+    except Exception as e:
+        logger.error(f"Erro ao clicar no elemento {elemento}: {e}")
+        raise
+
+@when('o usuário preenche o campo {campo} com "{valor}"')
+def step_preenche_campo(context, campo, valor):
+    """
+    Passo quando para preencher um campo com um valor.
+    """
+    try:
+        locator = getattr(context.page, f"LOC_{campo.upper()}", None)
+        if locator is None:
+            raise Exception(f"Locator para o campo '{campo}' não encontrado.")
+        context.page.preencher(locator, valor)
+        logger.info(f"Preencheu o campo {campo} com o valor: {valor}")
+    except Exception as e:
+        logger.error(f"Erro ao preencher o campo {campo} com o valor {valor}: {e}")
+        raise
+
+@then('valida que a URL da página é "{url}"')
+def step_valida_url(context, url):
+    """
+    Passo então para validar a URL da página.
+    """
+    try:
+        url_atual = context.driver.current_url
+        if url_atual != url:
+            raise AssertionError(f"URL esperada: {url}, mas a URL atual é: {url_atual}")
+        logger.info(f"URL da página validada com sucesso: {url_atual}")
+    except Exception as e:
+        logger.error(f"Erro ao validar a URL da página: {e}")
+        raise
+
+# Outros passos (steps) podem ser adicionados aqui conforme necessário
+`;
+            downloadFile(`steps_${featureSlug}.py`, stepsPy);
+
+
+            // --- environment.py com configurações básicas ---
+            const environmentPy = `# ${featureSlug}_environment.py gerado automaticamente para a feature "${feature.name}"
+# -*- coding: utf-8 -*-
+"""
+Configurações do Behave para a feature "${feature.name}".
+Inclui configurações básicas e hooks de inicialização.
+"""
 
 def before_all(context):
     """
-    Inicializa o driver do Selenium antes de todos os testes.
+    Executado uma vez antes de todos os cenários.
     """
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        handlers=[logging.StreamHandler()]
-    )
-    browser = os.getenv("BROWSER", "chrome").lower()
-    try:
-        if browser == "chrome":
-            from selenium.webdriver.chrome.service import Service as ChromeService
-            from selenium.webdriver.chrome.options import Options as ChromeOptions
-            options = ChromeOptions()
-            options.add_argument("--start-maximized")
-            context.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
-        elif browser == "firefox":
-            from selenium.webdriver.firefox.service import Service as FirefoxService
-            from selenium.webdriver.firefox.options import Options as FirefoxOptions
-            options = FirefoxOptions()
-            options.add_argument("--width=1920")
-            options.add_argument("--height=1080")
-            context.driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
-        elif browser == "edge":
-            from selenium.webdriver.edge.service import Service as EdgeService
-            from selenium.webdriver.edge.options import Options as EdgeOptions
-            options = EdgeOptions()
-            context.driver = webdriver.Edge(service=EdgeService(EdgeChromiumDriverManager().install()), options=options)
-        else:
-            raise ValueError(f"Navegador não suportado: {browser}")
-        logging.info(f"Driver iniciado com sucesso ({browser})")
-    except WebDriverException as e:
-        logging.error(f"Erro ao iniciar o driver: {e}")
-        raise
-    except Exception as e:
-        logging.error(f"Erro inesperado: {e}")
-        raise
-
-def after_step(context, step):
-    """
-    Tira screenshot em caso de falha no step.
-    """
-    if step.status == "failed":
-        try:
-            screenshots_dir = os.path.join(os.getcwd(), "screenshots")
-            os.makedirs(screenshots_dir, exist_ok=True)
-            filename = f"{step.name.replace(' ', '_')}.png"
-            filepath = os.path.join(screenshots_dir, filename)
-            context.driver.save_screenshot(filepath)
-            logging.error(f"Step falhou. Screenshot salvo em: {filepath}")
-        except Exception as e:
-            logging.error(f"Erro ao salvar screenshot: {e}")
+    # Configurações globais podem ser adicionadas aqui
+    context.default_timeout = 10  # Timeout padrão de 10 segundos
+    print("[INFO] Iniciando testes com timeout padrão de 10 segundos.")
 
 def after_all(context):
     """
-    Finaliza o driver após todos os testes.
+    Executado uma vez após todos os cenários.
     """
-    try:
-        if hasattr(context, "driver"):
-            context.driver.quit()
-            logging.info("Driver finalizado com sucesso.")
-    except Exception as e:
-        logging.error(f"Erro ao finalizar o driver: {e}")
+    # Limpeza e fechamento de recursos podem ser feitos aqui
+    print("[INFO] Testes finalizados.")
+
+# Outros hooks e configurações podem ser adicionados aqui conforme necessário
 `;
+            downloadFile(`environment_${featureSlug}.py`, environmentPy);
 
-            downloadFile(`environment.py`, environmentPy);
 
-            // Gera requirements.txt mais completo
-            const requirementsTxt = `# requirements.txt gerado automaticamente
+            // --- requirements.txt com dependências básicas ---
+            const requirementsTxt = `# requirements.txt gerado automaticamente para a feature "${feature.name}"
+# -*- coding: utf-8 -*-
+"""
+Dependências necessárias para executar os testes da feature "${feature.name}".
+Instale as dependências com: pip install -r requirements.txt
+"""
+
 selenium
 behave
-webdriver-manager
-pytest
-python-dotenv
-colorama
-pytest-bdd
-requests
 `;
-            downloadFile(`requirements_${feature.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.txt`, requirementsTxt);
+            downloadFile(`requirements_${featureSlug}.txt`, requirementsTxt);
         });
-
-        // Ao final da exportação:
-        hideSpinner();
-        showFeedback('Exportação realizada com sucesso!');
     });
 }
 
-// Torna exportSelectedFeatures disponível globalmente para o ui.js
-window.exportSelectedFeatures = exportSelectedFeatures;
-
-// Mantém o Service Worker ativo
-if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-        if (message.action === 'keepAlive') {
-            sendResponse({ status: 'alive' });
-        }
-    });
+// Função para exportar tudo (features, README.md, pages.py, steps.py, environment.py, requirements.txt)
+function exportAll() {
+    const allFeatureIndices = window.gherkinFeatures.map((_, idx) => idx);
+    exportSelectedFeatures(allFeatureIndices);
 }
 
-// --- Substitua a função getRobustXPath por esta implementação robusta ---
-function getRobustXPath(element) {
-    if (!element || element.nodeType !== 1) return '';
-
-    // Se o elemento tem um id único, use
-    if (element.id && document.querySelectorAll(`#${CSS.escape(element.id)}`).length === 1) {
-        return `//*[@id="${element.id}"]`;
-    }
-
-    // Se o elemento tem um name único, use
-    if (element.name && document.querySelectorAll(`[name="${element.name}"]`).length === 1) {
-        return `//*[@name="${element.name}"]`;
-    }
-
-    // Função auxiliar para escapar valores de atributos
-    function escapeXpathString(str) {
-        if (str.indexOf('"') === -1) {
-            return '"' + str + '"';
-        }
-        if (str.indexOf("'") === -1) {
-            return "'" + str + "'";
-        }
-        return 'concat("' + str.replace(/"/g, '", \'"\', "') + '")';
-    }
-
-    // Gera expressão de atributos relevantes
-    function getAttrExpr(el) {
-        const attrs = [];
-        if (el.getAttribute('type')) attrs.push(`@type=${escapeXpathString(el.getAttribute('type'))}`);
-        if (el.getAttribute('role')) attrs.push(`@role=${escapeXpathString(el.getAttribute('role'))}`);
-        if (el.getAttribute('aria-label')) attrs.push(`@aria-label=${escapeXpathString(el.getAttribute('aria-label'))}`);
-        if (el.getAttribute('placeholder')) attrs.push(`@placeholder=${escapeXpathString(el.getAttribute('placeholder'))}`);
-        if (el.getAttribute('data-testid')) attrs.push(`@data-testid=${escapeXpathString(el.getAttribute('data-testid'))}`);
-        if (el.className && typeof el.className === 'string') {
-            const classList = el.className.trim().split(/\s+/).filter(Boolean);
-            if (classList.length === 1) attrs.push(`contains(concat(' ',normalize-space(@class),' '), ' ${classList[0]} ')`);
-        }
-        return attrs.length ? '[' + attrs.join(' and ') + ']' : '';
-    }
-
-    // Caminho relativo, subindo até body ou html
-    let path = '';
-    let current = element;
-    while (current && current.nodeType === 1 && current !== document.body && current !== document.documentElement) {
-        let tag = current.tagName.toLowerCase();
-        let attrExpr = getAttrExpr(current);
-
-        // Se o elemento é único pelo conjunto de atributos, use
-        if (attrExpr) {
-            const testXpath = '//' + tag + attrExpr;
-            try {
-                const result = document.evaluate(testXpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
-                if (result.snapshotLength === 1) {
-                    path = '/' + tag + attrExpr + path;
-                    break;
-                }
-            } catch (e) {}
-        }
-
-        // Se não for único, tenta sem atributos, mas sem usar índices se possível
-        let siblings = Array.from(current.parentNode ? current.parentNode.children : []);
-        let sameTagSiblings = siblings.filter(sib => sib.tagName === current.tagName);
-        if (sameTagSiblings.length === 1) {
-            path = '/' + tag + path;
-        } else {
-            // Só usa índice se necessário
-            let idx = sameTagSiblings.indexOf(current) + 1;
-            path = '/' + tag + `[${idx}]` + path;
-        }
-        current = current.parentNode;
-    }
-    // Caminho final, sempre relativo ao body/html
-    return '.' + path;
-}
-
-// --- Fim da nova função getRobustXPath ---
-
-// --- Substituição da função renderLogWithActions para exibir colunas customizadas para "preencher" ---
-window.renderLogWithActions = function() {
-    const logPanel = document.getElementById('gherkin-log-panel');
-    if (!logPanel) return;
-    logPanel.innerHTML = '';
-
-    // Cria lista de logs
-    const ul = document.createElement('ul');
-    ul.className = 'gherkin-log-list';
-
-    window.interactions.forEach((interaction) => {
-        const li = document.createElement('li');
-        li.className = 'gherkin-log-item';
-        li.dataset.action = interaction.acao || '';
-
-        if (interaction.acao === 'preenche') {
-            // Layout especial para "Preencher": Gherkin | Ação | Elemento | Valor preenchido
-            li.style.alignItems = 'center';
-            li.style.gap = '0';
-
-            // Gherkin
-            const gherkin = document.createElement('span');
-            gherkin.style.flex = '0 0 70px';
-            gherkin.style.fontWeight = 'bold';
-            gherkin.style.color = '#0070f3';
-            gherkin.innerText = interaction.step || '';
-            li.appendChild(gherkin);
-
-            // Ícone + Ação
-            const action = document.createElement('span');
-            action.style.flex = '0 0 110px';
-            action.style.display = 'inline-flex';
-            action.style.alignItems = 'center';
-            action.innerHTML = `<span class="gherkin-log-icon" style="margin-right:6px;">📝</span>${interaction.acaoTexto || 'Preencher'}`;
-            li.appendChild(action);
-
-            // Elemento (nome do campo)
-            const elemento = document.createElement('span');
-            elemento.style.flex = '0 0 120px';
-            elemento.style.fontWeight = '500';
-            elemento.style.background = '#f7faff';
-            elemento.style.borderRadius = '5px';
-            elemento.style.padding = '2px 10px';
-            elemento.style.margin = '0 8px 0 0';
-            elemento.style.color = '#222';
-            elemento.style.fontSize = '0.97em';
-            elemento.innerText = interaction.nomeElemento || '';
-            li.appendChild(elemento);
-
-            // "o valor"
-            const labelValor = document.createElement('span');
-            labelValor.style.flex = '0 0 auto';
-            labelValor.style.color = '#555';
-            labelValor.style.fontSize = '0.97em';
-            labelValor.style.marginRight = '4px';
-            labelValor.innerText = 'o valor';
-            li.appendChild(labelValor);
-
-            // Valor preenchido
-            const valor = document.createElement('span');
-            valor.style.flex = '1';
-            valor.style.fontWeight = 'bold';
-            valor.style.background = '#fff';
-            valor.style.border = '1.5px solid #e0e6ed';
-            valor.style.borderRadius = '5px';
-            valor.style.padding = '2px 10px';
-            valor.style.color = '#222';
-            valor.style.fontSize = '0.97em';
-            valor.style.wordBreak = 'break-all';
-            valor.innerText = typeof interaction.valorPreenchido !== 'undefined' ? interaction.valorPreenchido : '';
-            li.appendChild(valor);
-        } else {
-            // Log padrão para outras ações
-            // Ícone
-            const icon = document.createElement('span');
-            icon.className = 'gherkin-log-icon';
-            icon.innerText = (() => {
-                switch (interaction.acao) {
-                    case 'preenche': return '📝';
-                    case 'upload': return '📤';
-                    case 'login': return '🔑';
-                    case 'clica': return '🖱️';
-                    case 'espera': return '⏳';
-                    case 'espera_elemento': return '👁️';
-                    case 'acessa_url': return '🌐';
-                    case 'seleciona': return '✅';
-                    case 'espera_nao_existe': return '🚫';
-                    default: return '🔹';
-                }
-            })();
-            li.appendChild(icon);
-
-            // Conteúdo
-            const content = document.createElement('div');
-            content.className = 'gherkin-log-content';
-
-            // Título
-            const title = document.createElement('div');
-            title.className = 'gherkin-log-title';
-            title.innerText = `${interaction.step || ''} ${interaction.acaoTexto || interaction.acao || ''}`;
-            content.appendChild(title);
-
-            // Descrição
-            const desc = document.createElement('div');
-            desc.className = 'gherkin-log-desc';
-            desc.innerText = interaction.nomeElemento || '';
-            content.appendChild(desc);
-
-            // Valor preenchido (apenas se existir, para manter compatibilidade)
-            if (typeof interaction.valorPreenchido !== 'undefined' && interaction.acao !== 'preenche') {
-                const meta = document.createElement('div');
-                meta.className = 'gherkin-log-meta';
-                meta.innerText = `Valor: "${interaction.valorPreenchido}"`;
-                content.appendChild(meta);
-            }
-
-            li.appendChild(content);
-        }
-
-        ul.appendChild(li);
-    });
-
-    logPanel.appendChild(ul);
-};
-
-// --- Adaptação para permitir edição do "Valor preenchido" no modal de edição de interação ---
-// Supondo que showEditModal é responsável por exibir o modal de edição de interação
-window.showEditModal = function(interaction, idx) {
-    // ...existing code to create modal...
-
-    // Campo Passo BDD
-    // ...existing code...
-
-    // Campo Ação
-    // ...existing code...
-
-    // Campo Nome do elemento
-    // ...existing code...
-
-    // Adiciona campo "Valor preenchido" apenas para ação "preenche"
-    let valorPreenchidoInput = null;
-    if (interaction.acao === 'preenche') {
-        const valorLabel = document.createElement('label');
-        valorLabel.innerText = 'Valor preenchido:';
-        valorLabel.setAttribute('for', 'gherkin-edit-valor-preenchido');
-        valorLabel.style.marginTop = '8px';
-
-        valorPreenchidoInput = document.createElement('input');
-        valorPreenchidoInput.type = 'text';
-        valorPreenchidoInput.id = 'gherkin-edit-valor-preenchido';
-        valorPreenchidoInput.value = typeof interaction.valorPreenchido !== 'undefined' ? interaction.valorPreenchido : '';
-        valorPreenchidoInput.style.marginBottom = '12px';
-        valorPreenchidoInput.autocomplete = 'off';
-
-        // Adiciona ao modal
-        modalContent.appendChild(valorLabel);
-        modalContent.appendChild(valorPreenchidoInput);
-    }
-
-    // ...existing code for Salvar/Cancelar...
-
-    saveBtn.onclick = function() {
-        // ...existing code to coletar outros campos...
-
-        // Coleta o valor preenchido se for ação "preenche"
-        if (interaction.acao === 'preenche' && valorPreenchidoInput) {
-            interaction.valorPreenchido = valorPreenchidoInput.value;
-        }
-
-        // ...existing code to salvar interação e fechar modal...
-    };
-
-    // ...existing code...
+// Expor funções para o contexto global, se necessário
+window.gherkin = {
+    exportReadmeForFeatures,
+    exportSelectedFeatures,
+    exportAll
 };

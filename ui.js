@@ -674,6 +674,7 @@ function renderPanelContent(panel) {
                             <option value="navega">Navegar</option>
                             <option value="login">Login</option>
                             <option value="upload">Upload de arquivo</option>
+                            <option value="valida_url">Validar URL da página</option>
                         </optgroup>
                         <optgroup label="Validações">
                             <option value="valida_existe">Validar que existe</option>
@@ -862,7 +863,8 @@ function updateActionParams(panel) {
         'espera_nao_existe': 'Clique no elemento que deseja aguardar desaparecer.',
         'espera_existe': 'Clique no elemento que deseja aguardar que exista.',
         'espera_habilitado': 'Clique no elemento que deseja aguardar que esteja habilitado.',
-        'espera_desabilitado': 'Clique no elemento que deseja aguardar que esteja desabilitado.'
+        'espera_desabilitado': 'Clique no elemento que deseja aguardar que esteja desabilitado.',
+        'valida_url': 'Valida se a URL atual da página é igual à informada. Use para garantir que a navegação ocorreu corretamente.'
     };
 
     paramsDiv.innerHTML = '';
@@ -1118,6 +1120,7 @@ const ACTION_META = {
     valida_nao_contem: { icon: '🚫', color: '#e74c3c', label: 'Validar não contém' },
     valida_deve_ser: { icon: '✔️', color: '#218838', label: 'Validar deve ser' },
     valida_nao_deve_ser: { icon: '❌', color: '#e74c3c', label: 'Validar não deve ser' },
+    valida_url: { icon: '🌐', color: '#0070f3', label: 'Validar URL' },
     // ...adicione outros conforme necessário
 };
 
@@ -1274,6 +1277,8 @@ function renderLogWithActions() {
                 tdValor.textContent = i.nomeArquivo || '';
             } else if (i.acao === 'login') {
                 tdValor.textContent = i.valorPreenchido || '';
+            } else if (i.acao === 'valida_url') {
+                tdValor.textContent = i.urlEsperada || '';
             } else {
                 tdValor.textContent = '';
             }

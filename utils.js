@@ -147,6 +147,8 @@ function getRobustXPath(element) {
 }
 
 function isExtensionContextValid() {
+// Torna a função disponível globalmente
+window.getRobustXPath = getRobustXPath;
     return typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id;
 }
 
