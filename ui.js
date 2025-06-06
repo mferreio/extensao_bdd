@@ -624,7 +624,7 @@ function renderPanelContent(panel) {
     let html = '';
     html += `
         <div class="gherkin-panel-header">
-            <h3>GERADOR DE TESTES AUTOMATIZADOS EM PYTHON</h3>
+            <h3>GERADOR DE TESTES AUTOMATIZADOS EM PYTHON. v1.0</h3>
             <div class="button-container-top">
                 <button id="gherkin-highlight-toggle" title="Selecionar elemento na página" style="background:none; border:none; cursor:pointer; font-size:1.2rem; padding:2px 6px;">
                     <span id="gherkin-highlight-icon" style="display:inline-block; vertical-align:middle;">

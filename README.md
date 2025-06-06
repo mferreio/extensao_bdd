@@ -122,5 +122,6 @@ npx webpack --config webpack.config.js --no-cache
 
 ## Licença
 Este projeto foi produzido por Matheus Ferreira de Oliveira.
+V: 1.0
 
 
