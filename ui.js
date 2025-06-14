@@ -845,7 +845,65 @@ function createPanel() {
     panel.setAttribute('role', 'dialog');
     panel.setAttribute('aria-label', 'Painel Gherkin Generator');
     panel.tabIndex = -1;
+    panel.style.resize = 'none';
+    panel.style.overflow = 'visible'; // Permite handle sair da borda
     renderPanelContent(panel);
+    // Handle de resize aprimorado
+    const resizeHandle = document.createElement('div');
+    resizeHandle.style.position = 'absolute';
+    resizeHandle.style.right = '-6px';
+    resizeHandle.style.bottom = '-6px';
+    resizeHandle.style.width = '28px';
+    resizeHandle.style.height = '28px';
+    resizeHandle.style.cursor = 'nwse-resize';
+    resizeHandle.style.background = 'rgba(0,0,0,0.07)';
+    resizeHandle.style.borderRadius = '6px';
+    resizeHandle.style.display = 'flex';
+    resizeHandle.style.alignItems = 'flex-end';
+    resizeHandle.style.justifyContent = 'flex-end';
+    resizeHandle.style.zIndex = '10001';
+    resizeHandle.setAttribute('aria-label', 'Redimensionar painel');
+    resizeHandle.tabIndex = 0;
+    resizeHandle.innerHTML = '<svg width="22" height="22" aria-hidden="true" focusable="false" style="pointer-events:none"><polyline points="6,20 20,20 20,6" style="fill:none;stroke:#0070f3;stroke-width:2"/></svg>';
+    panel.appendChild(resizeHandle);
+    // Redimensionamento
+    let resizing = false;
+    let startX, startY, startWidth, startHeight;
+    resizeHandle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        resizing = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startWidth = parseInt(document.defaultView.getComputedStyle(panel).width, 10);
+        startHeight = parseInt(document.defaultView.getComputedStyle(panel).height, 10);
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'nwse-resize';
+    });
+    document.addEventListener('mousemove', (e) => {
+        if (!resizing) return;
+        let newWidth = startWidth + (e.clientX - startX);
+        let newHeight = startHeight + (e.clientY - startY);
+        newWidth = Math.max(320, Math.min(newWidth, window.innerWidth - 20));
+        newHeight = Math.max(320, Math.min(newHeight, window.innerHeight - 20));
+        panel.style.width = newWidth + 'px';
+        panel.style.height = newHeight + 'px';
+    });
+    document.addEventListener('mouseup', () => {
+        if (resizing) {
+            resizing = false;
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+        }
+    });
+    // Acessibilidade: resize via teclado (setas)
+    resizeHandle.addEventListener('keydown', (e) => {
+        let w = parseInt(panel.style.width, 10);
+        let h = parseInt(panel.style.height, 10);
+        if (e.key === 'ArrowRight') { panel.style.width = (w + 20) + 'px'; e.preventDefault(); }
+        if (e.key === 'ArrowLeft') { panel.style.width = (w - 20) + 'px'; e.preventDefault(); }
+        if (e.key === 'ArrowDown') { panel.style.height = (h + 20) + 'px'; e.preventDefault(); }
+        if (e.key === 'ArrowUp') { panel.style.height = (h - 20) + 'px'; e.preventDefault(); }
+    });
     // Foco inicial e navegação por teclado
     setTimeout(() => {
         const focusables = panel.querySelectorAll('input, button, select, [tabindex="0"]');
@@ -1397,7 +1455,7 @@ function updateActionParams(panel) {
         'radio': 'Clique no botão de rádio desejado.',
         'caixa': 'Clique na caixa de seleção desejada.',
         'navega': 'Navegue para a página desejada.',
-        'login': 'Preencha os campos de usuário/email e senha na página. Clique no botão abaixo para marcar como login.',
+        'login': 'Preencha os campos de usuário/email e senha na página. Clique no botão abaixo para marcar como login.';
         'upload': 'Clique em um campo de upload na página ou informe o nome do arquivo de exemplo.',
         'valida_existe': 'Clique no elemento que deseja validar que existe.',
         'valida_nao_existe': 'Clique no elemento que deseja validar que não existe.',
