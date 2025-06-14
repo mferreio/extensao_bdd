@@ -1,0 +1,301 @@
+/* ui.css - Estilos centralizados para painel, modal e componentes BDD */
+:root {
+  --color-bg: #fff;
+  --color-bg-alt: #f9fbfd;
+  --color-primary: #0070f3;
+  --color-primary-dark: #005bb5;
+  --color-accent: #90caf9;
+  --color-danger: #e74c3c;
+  --color-success: #28a745;
+  --color-warning: #ffc107;
+  --color-border: #e0e6ed;
+  --color-modal-overlay: rgba(0,0,0,0.25);
+  --color-modal-bg: #fff;
+  --color-shadow: rgba(0,0,0,0.10);
+  --color-shadow-strong: rgba(0,0,0,0.18);
+  --color-text: #222;
+  --color-text-light: #fff;
+  --color-footer: #888;
+  --btn-radius: 9px;
+  --btn-height: 42px;
+  --btn-min-width: 110px;
+  --btn-font-size: 1.07rem;
+  --btn-shadow: 0 2px 8px rgba(0,112,243,0.08);
+  --input-radius: 8px;
+  --input-height: 38px;
+  --input-font-size: 1rem;
+  --modal-radius: 14px;
+  --font-family: 'Roboto', Arial, sans-serif;
+}
+
+.dark-theme {
+  --color-bg: #181c24;
+  --color-bg-alt: #232837;
+  --color-primary: #2196f3;
+  --color-primary-dark: #1565c0;
+  --color-accent: #90caf9;
+  --color-danger: #ef5350;
+  --color-success: #66bb6a;
+  --color-warning: #ffd600;
+  --color-border: #333a4d;
+  --color-modal-overlay: rgba(0,0,0,0.55);
+  --color-modal-bg: #232837;
+  --color-shadow: rgba(0,0,0,0.45);
+  --color-shadow-strong: rgba(0,0,0,0.65);
+  --color-text: #e3f2fd;
+  --color-text-light: #fff;
+  --color-footer: #607d8b;
+}
+
+.gherkin-panel, #gherkin-panel {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  width: 480px;
+  max-width: 540px;
+  min-width: 320px;
+  height: 92vh;
+  max-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--modal-radius);
+  box-shadow: 0 8px 24px var(--color-shadow);
+  padding: 18px 14px 24px 14px;
+  z-index: 10000;
+  font-family: var(--font-family);
+  transition: opacity 0.3s, transform 0.3s, background 0.3s;
+}
+
+.gherkin-modal-bg {
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background: var(--color-modal-overlay);
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeInModalBg 0.22s;
+}
+.gherkin-modal-content {
+  background: var(--color-modal-bg);
+  color: var(--color-text);
+  border-radius: var(--modal-radius);
+  box-shadow: 0 4px 32px var(--color-shadow-strong);
+  padding: 28px 32px 22px 32px;
+  min-width: 320px;
+  max-width: 96vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 1.04rem;
+}
+
+.gherkin-btn, .gherkin-btn-main, .gherkin-btn-danger, .gherkin-btn-success, .gherkin-btn-warning {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 22px;
+  min-width: var(--btn-min-width);
+  height: var(--btn-height);
+  background-color: var(--color-primary);
+  color: var(--color-text-light);
+  border: none;
+  border-radius: var(--btn-radius);
+  cursor: pointer;
+  font-size: var(--btn-font-size);
+  font-weight: 600;
+  box-shadow: var(--btn-shadow);
+  margin: 0 4px 6px 0;
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s, transform 0.13s;
+  outline: none;
+}
+.gherkin-btn-danger { background: var(--color-danger); color: var(--color-text-light); }
+.gherkin-btn-success { background: var(--color-success); color: var(--color-text-light); }
+.gherkin-btn-warning { background: var(--color-warning); color: #222; }
+.gherkin-btn:disabled, .gherkin-btn[disabled] {
+  background-color: #cccccc;
+  color: #eee;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.gherkin-btn:focus, .gherkin-btn-main:focus, .gherkin-btn-danger:focus, .gherkin-btn-success:focus, .gherkin-btn-warning:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.gherkin-content, .gherkin-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 2px;
+}
+.gherkin-content label, .gherkin-modal-content label {
+  font-weight: 600;
+  color: var(--color-accent);
+  margin-bottom: 2px;
+  font-size: 1.04rem;
+  letter-spacing: 0.01em;
+}
+.gherkin-content input[type="text"],
+.gherkin-content input[type="number"],
+.gherkin-content textarea,
+.gherkin-content select,
+.gherkin-modal-content input[type="text"],
+.gherkin-modal-content input[type="number"],
+.gherkin-modal-content textarea,
+.gherkin-modal-content select {
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  border-radius: var(--input-radius);
+  border: 1.5px solid var(--color-border);
+  font-size: var(--input-font-size);
+  margin-bottom: 4px;
+  background: var(--color-bg-alt);
+  color: var(--color-text);
+  padding: 0 12px;
+  height: var(--input-height);
+  outline: none;
+}
+.gherkin-content input:focus, .gherkin-modal-content input:focus,
+.gherkin-content textarea:focus, .gherkin-modal-content textarea:focus,
+.gherkin-content select:focus, .gherkin-modal-content select:focus {
+  border: 1.5px solid var(--color-primary);
+  background: #f1f8ff;
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.gherkin-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-bg-alt);
+  border-bottom: 1px solid var(--color-border);
+  padding: 18px 20px 12px 20px;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: var(--color-primary);
+  letter-spacing: 0.01em;
+  user-select: none;
+}
+.gherkin-panel-header .gherkin-panel-title {
+  font-size: 1.18rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.gherkin-panel-header .gherkin-panel-actions {
+  display: flex;
+  gap: 8px;
+}
+.gherkin-panel-header button, .gherkin-panel-header .gherkin-close, .gherkin-panel-header .gherkin-minimize {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 2px 6px;
+  color: var(--color-danger);
+  transition: color 0.2s;
+}
+.gherkin-panel-header .gherkin-minimize { color: var(--color-warning); }
+.gherkin-panel-header .gherkin-close:hover { color: #c0392b; }
+.gherkin-panel-header .gherkin-minimize:hover { color: #b7950b; }
+
+.gherkin-feedback {
+  margin: 6px 0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  background: #eafaf1;
+  color: #218838;
+  border: 1.5px solid #28a745;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  transition: background 0.2s, color 0.2s;
+}
+.gherkin-feedback.error { background: #fff6f6; color: #e74c3c; border-color: #e74c3c; }
+.gherkin-feedback.info { background: #f7faff; color: #0070f3; border-color: #0070f3; }
+
+.gherkin-tip {
+  background: #f7faff;
+  border-left: 4px solid #0070f3;
+  padding: 8px 14px;
+  border-radius: 6px;
+  color: #0070f3;
+  font-size: 0.98rem;
+  margin-bottom: 6px;
+  margin-top: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.gherkin-tip .gherkin-tip-icon {
+  font-size: 1.2em;
+  margin-right: 4px;
+  color: #0070f3;
+}
+
+.gherkin-btn:focus-visible, .gherkin-btn-main:focus-visible, .gherkin-btn-danger:focus-visible, .gherkin-btn-success:focus-visible, .gherkin-btn-warning:focus-visible,
+.gherkin-content input:focus-visible, .gherkin-modal-content input:focus-visible,
+.gherkin-content textarea:focus-visible, .gherkin-modal-content textarea:focus-visible,
+.gherkin-content select:focus-visible, .gherkin-modal-content select:focus-visible {
+  outline: 2.5px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+  .gherkin-panel, #gherkin-panel {
+    left: 0 !important;
+    top: 0 !important;
+    width: 100vw !important;
+    min-width: 0 !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    padding: 8px 2vw 16px 2vw !important;
+    font-size: 0.98rem !important;
+  }
+  .gherkin-modal-content {
+    min-width: 0 !important;
+    max-width: 98vw !important;
+    padding: 12px 2vw 12px 2vw !important;
+    font-size: 0.98rem !important;
+  }
+  .gherkin-content, .gherkin-modal-content {
+    padding: 0 2vw !important;
+    gap: 7px !important;
+  }
+  .gherkin-btn, .gherkin-btn-main, .gherkin-btn-danger, .gherkin-btn-success, .gherkin-btn-warning {
+    min-width: 80px !important;
+    height: 36px !important;
+    font-size: 0.97rem !important;
+    padding: 0 10px !important;
+  }
+  .gherkin-content input[type="text"],
+  .gherkin-content input[type="number"],
+  .gherkin-content textarea,
+  .gherkin-content select,
+  .gherkin-modal-content input[type="text"],
+  .gherkin-modal-content input[type="number"],
+  .gherkin-modal-content textarea,
+  .gherkin-modal-content select {
+    height: 32px !important;
+    font-size: 0.97rem !important;
+    padding: 0 8px !important;
+  }
+}
+
+@keyframes fadeInModalBg {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideIn {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}

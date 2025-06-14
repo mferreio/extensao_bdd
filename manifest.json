@@ -3,7 +3,7 @@
     "name": "Assistente automatizador",
     "version": "1.0",
     "description": "Gera Xpath e CSS_selectors com base na navegação do usuário.",
-    "permissions": ["activeTab", "scripting", "downloads", "storage"],
+    "permissions": ["activeTab", "scripting", "storage"],
     "background": {
         "service_worker": "background.js"
     },
@@ -16,5 +16,4 @@
     "action": {
         "default_icon": "icon.png"
     }
-    
 }

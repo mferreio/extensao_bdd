@@ -1,6 +1,10 @@
 // ====== Destaque visual de elemento ao passar o mouse (tipo DevTools) ======
 let gherkinHighlightCurrent = null;
 
+/**
+ * Injeta o estilo de destaque visual para elementos ao passar o mouse.
+ * Garante que o estilo não seja duplicado.
+ */
 function injectGherkinHighlightStyle() {
     if (!document.getElementById('gherkin-highlight-style')) {
         const style = document.createElement('style');
@@ -16,6 +20,10 @@ function injectGherkinHighlightStyle() {
     }
 }
 
+/**
+ * Ativa o modo de destaque visual para seleção de elementos na página.
+ * Adiciona listeners para mouseover/mouseout e destaca o elemento sob o cursor.
+ */
 function enableGherkinHighlightMode() {
     injectGherkinHighlightStyle();
     function onMouseOver(e) {
@@ -36,6 +44,9 @@ function enableGherkinHighlightMode() {
     window.__gherkinHighlightOn = { onMouseOver, onMouseOut };
 }
 
+/**
+ * Desativa o modo de destaque visual, removendo listeners e limpando o destaque.
+ */
 function disableGherkinHighlightMode() {
     if (window.__gherkinHighlightOn) {
         document.removeEventListener('mouseover', window.__gherkinHighlightOn.onMouseOver, true);
@@ -51,6 +62,13 @@ function disableGherkinHighlightMode() {
 // Exponha as funções no escopo global para fácil integração com o painel
 window.enableGherkinHighlightMode = enableGherkinHighlightMode;
 window.disableGherkinHighlightMode = disableGherkinHighlightMode;
+window.gherkin = {
+    exportReadmeForFeatures,
+    exportSelectedFeatures,
+    exportAll
+};
+
+// --- IMPORTS E INICIALIZAÇÃO ---
 // Importa funções utilitárias e de UI
 import { slugify, downloadFile, showFeedback, debounce, getCSSSelector, isExtensionContextValid } from './utils.js';
 import {
@@ -69,8 +87,17 @@ import XPathGenerator from './utils.js';
 import DomInspector from './domInspector.js';
 import EventManager from './eventManager.js';
 import ShadowDomManager from './shadowDomManager.js';
+import './ui.css';
+import Button from './components/Button.js';
+import Input from './components/Input.js';
+import Feedback from './components/Feedback.js';
+import Modal from './components/Modal.js';
+import Checkbox from './components/Checkbox.js';
 
-// Inicialização dos managers
+/**
+ * Inicializa os managers principais responsáveis por eventos e inspeção de elementos.
+ * O eventManager registra interações do usuário e atualiza o log.
+ */
 const eventManager = new EventManager((type, element, event) => {
     DomInspector.inspectElement().then(elementInfo => {
         window.interactions = window.interactions || [];
@@ -1275,16 +1302,6 @@ function exportSelectedFeatures(selectedIdxs) {
 
         // Exporta um arquivo .feature por feature
         featuresToExport.forEach((feature) => {
-            // Função slugify local para garantir consistência
-            function slugify(str, upperCamel) {
-                let s = (str || '').normalize('NFD').replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '_').replace(/^_+|_+$/g, '');
-                if (upperCamel) {
-                    s = s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
-                } else {
-                    s = s.toLowerCase();
-                }
-                return s;
-            }
             const featureSlug = slugify(feature.name, false);
             let featureText = `Feature: ${feature.name}\n`;
             (feature.cenarios || []).forEach((cenario, cIdx) => {
@@ -1626,8 +1643,8 @@ class Page${slugify(feature.name, true)}:
                 } else {
                     throw e;
                 }
+
             }
-        }
         throw new Exception('Não foi possível clicar no elemento ' + locator + ' após ' + tentativas + ' tentativas devido a StaleElementReferenceException. Último erro: ' + ultimo_erro);
     }
 
@@ -1655,7 +1672,8 @@ class Page${slugify(feature.name, true)}:
                     console.log('[ERRO] Elemento ' + locator + ' não encontrado: ' + e);
                     throw e;
                 } else if (e.name === 'ElementNotInteractableException') {
-                    // ...outros tratamentos...
+                    console.log('[ERRO] Elemento ' + locator + ' não interagível: ' + e);
+                    throw e;
                 } else {
                     throw e;
                 }
@@ -1848,7 +1866,7 @@ def step_preenche_campo(context, campo, valor):
             throw new Exception('Locator para o campo \'' + campo + '\' não encontrado.')
         }
         // Se o campo tem texto após o pipe, valida o texto após preencher
-        texto_esperado = campo.split('|')[1].trim() if '|' in campo else null
+        texto_esperado = campo.split('|')[1].trim() if '|' in campo : null
         context.page.preencher(locator, valor)
         if (texto_esperado) {
             el = context.driver.find_element(*locator)
@@ -1897,7 +1915,7 @@ def step_valida_existencia_elemento(context, elemento):
     if (locator == null) {
         throw new Exception('Locator para o elemento \'' + elemento + '\' não encontrado.')
     }
-    texto_esperado = elemento.split('|')[1].trim() if '|' in elemento else null
+    texto_esperado = elemento.split('|')[1].trim() if '|' in elemento : null
     WebDriverWait(context.driver, context.default_timeout).until(
         EC.presence_of_element_located(locator)
     )
@@ -1914,101 +1932,17 @@ def step_preencho_tabela(context):
         campo = row['Campo']
         valor = row['Valor']
         locator_name = LOCATOR_MAP.get(campo.lower().split('|')[0].trim())
-        locator = getattr(context.page, locator_name, None)
+        locator = getattr(context.page, locator_name, null)
         if (locator == null) {
             throw new Exception('Locator para o campo \'' + campo + '\' não encontrado.')
         }
         context.page.preencher(locator, valor)
         logger.info('Preencheu o campo ' + campo + ' com o valor: ' + valor);
 }
-`;
-            downloadFile(`${featureSlug}_steps.py`, stepsPy);
 
-
-            // --- environment.py com configurações básicas ---
-
-            const environmentPy = `# environment.py gerado automaticamente para a feature "${feature.name}"
-# -*- coding: utf-8 -*-
-"""
-Configurações do Behave para a feature "${feature.name}".
-Inclui inicialização do WebDriver e do Page Object Model (POM).
-"""
-
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-import os
-import sys
-
-# Importa o Page Object gerado para esta feature
-from ${featureSlug}_pages import Page${slugify(feature.name, true)}
-
-def before_all(context):
-    """
-    Executado uma vez antes de todos os cenários.
-    Inicializa o WebDriver e o Page Object.
-    """
-    chrome_options = Options()
-    chrome_options.add_argument('--start-maximized')
-    # Permite customizar o caminho do chromedriver via variável de ambiente
-    chromedriver_path = os.getenv('CHROMEDRIVER_PATH')
-    if (chromedriver_path) {
-        service = Service(chromedriver_path)
-        context.driver = webdriver.Chrome(service=service, options=chrome_options)
-    } else {
-        context.driver = webdriver.Chrome(options=chrome_options)
-    }
-    context.driver.implicitly_wait(5)
-    context.default_timeout = int(os.getenv('SELENIUM_TIMEOUT', 10))  # Timeout padrão de 10 segundos, parametrizável por variável de ambiente
-    # Inicializa o Page Object Model
-    context.page = Page${slugify(feature.name, true)}(context.driver)
-    console.log("[INFO] WebDriver e Page Object inicializados com sucesso.")
-
-def after_all(context):
-    """
-    Executado uma vez após todos os cenários.
-    Encerra o WebDriver.
-    """
-    // TODO: Ajustar o mapeamento dos locators se necessário.
-    if (hasattr(context, 'driver')) {
-        context.driver.quit()
-        console.log("[INFO] WebDriver finalizado.")
-    }
-    console.log("[INFO] Testes finalizados.")
-
-# Outros hooks e configurações podem ser adicionados aqui conforme necessário
-`;
-            downloadFile(`environment.py`, environmentPy);
-
-
-            // --- requirements.txt com dependências básicas ---
-            const requirementsTxt = `# requirements.txt gerado automaticamente para a feature "${feature.name}"
-# -*- coding: utf-8 -*-
-"""
-Dependências necessárias para executar os testes da feature "${feature.name}".
-Instale as dependências com: pip install -r requirements.txt
-"""
-
-selenium
-behave
-`;
-            downloadFile(`requirements.txt`, requirementsTxt);
-        });
-        // Remove spinner e dá feedback ao usuário
-        hideSpinner();
-        showFeedback('Exportação concluída!');
-    });
+// Exemplo de lazy loading para modais e painéis
+async function showLazyModal(props) {
+    const { default: Modal } = await import('./components/Modal.js');
+    const modal = Modal(props);
+    document.body.appendChild(modal);
 }
-
-// Função para exportar tudo (features, README.md, pages.py, steps.py, environment.py, requirements.txt)
-function exportAll() {
-    const allFeatureIndices = window.gherkinFeatures.map((_, idx) => idx);
-    exportSelectedFeatures(allFeatureIndices);
-}
-
-// Expor funções para o contexto global, se necessário
-window.gherkin = {
-    exportReadmeForFeatures,
-    exportSelectedFeatures,
-    exportAll
-};

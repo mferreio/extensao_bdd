@@ -92,6 +92,47 @@ O **Assistente Automatizador** é uma extensão para navegador que permite grava
 - Mantenha o padrão de código e documentação
 - Teste suas alterações antes de enviar
 
+---
+
+## 🤝 Guia de Contribuição e Manutenção
+
+### Estrutura do Projeto
+- Código-fonte principal: arquivos JS na raiz e pasta `components/`.
+- Testes unitários: pasta `__tests__`.
+- Estilos: `ui.css` centralizado.
+- Utilitários: `utils.js`.
+
+### Comentários e Boas Práticas
+- Funções críticas e utilitários possuem comentários explicativos.
+- Prefira sempre modularizar e reutilizar componentes.
+- Use lazy loading para fluxos não críticos.
+
+### Testes
+- Testes unitários em `__tests__/*.test.js` (exemplo: `utils.test.js`).
+- Para rodar os testes:
+  ```bash
+  npm test
+  ```
+- Recomenda-se adicionar testes para novas funções utilitárias e fluxos principais.
+
+### Lint e Formatação
+- Padronização automática com ESLint e Prettier.
+- Para checar lint:
+  ```bash
+  npm run lint
+  ```
+- Para formatar o código:
+  ```bash
+  npm run format
+  ```
+
+### Sugestões para Pull Requests
+- Sempre documente funções públicas e utilitários.
+- Adicione testes para novas funcionalidades.
+- Garanta que o código passe no lint e nos testes antes de enviar PR.
+
+---
+
 ## 🔒 Segurança e Privacidade
 O **Assistente Automatizador** foi desenvolvido com foco total em segurança e privacidade dos dados do usuário:
 

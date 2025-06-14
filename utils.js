@@ -1,3 +1,10 @@
+import uiTheme from './uiConfig.js';
+import Button from './components/Button.js';
+import Input from './components/Input.js';
+import Feedback from './components/Feedback.js';
+import Modal from './components/Modal.js';
+import Checkbox from './components/Checkbox.js';
+
 // Funções utilitárias
 function slugify(text) {
     return text.toString().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
@@ -23,33 +30,11 @@ function downloadFile(filename, content) {
 }
 
 function showFeedback(message, type = 'success') {
-    // Remove feedback antigo se existir
-    const old = document.querySelector('.feedback');
-    if (old) old.remove();
-    const feedback = document.createElement('div');
-    feedback.className = 'feedback';
-    feedback.setAttribute('role', 'alert');
-    feedback.setAttribute('aria-live', 'assertive');
-    feedback.style.backgroundColor = type === 'success' ? '#28a745' : '#dc3545';
-    feedback.style.color = '#fff';
-    feedback.innerHTML = `<span>${message}</span>
-        <button class="gherkin-feedback-close" aria-label="Fechar feedback" tabindex="0">&times;</button>`;
-    document.body.appendChild(feedback);
-    // Fechar manualmente
-    feedback.querySelector('.gherkin-feedback-close').onclick = () => feedback.remove();
-    // Fechar com ESC
-    function escListener(e) {
-        if (e.key === 'Escape') {
-            feedback.remove();
-            document.removeEventListener('keydown', escListener);
-        }
-    }
-    document.addEventListener('keydown', escListener);
-    // Fechar automático após 4s
-    setTimeout(() => {
-        if (feedback.parentNode) feedback.remove();
-        document.removeEventListener('keydown', escListener);
-    }, 4000);
+    Feedback.show({
+        message,
+        type,
+        duration: 4000
+    });
 }
 
 function debounce(func, wait) {
@@ -279,7 +264,7 @@ function showSpinner(message = 'Processando...') {
     const msg = document.createElement('div');
     msg.textContent = message;
     msg.style.fontSize = '16px';
-    msg.style.color = '#0D47A1';
+    msg.style.color = uiTheme.colors.primary;
     msg.style.textAlign = 'center';
     modal.appendChild(msg);
     modalBg.appendChild(modal);
@@ -611,4 +596,60 @@ class XPathGenerator {
         return path.join(' > ');
     }
 }
-//# sourceMappingURL=content.js.map
+
+/**
+ * Escapa caracteres especiais para evitar XSS ao inserir dados do usuário no DOM via innerHTML.
+ * Use sempre que for inserir texto dinâmico vindo do usuário!
+ * @param {string} str
+ * @returns {string}
+ */
+export function escapeHTML(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Função utilitária para validação de dados de entrada
+export function validateInput(value, { required = false, minLength = 0, maxLength = 1000, pattern = null } = {}) {
+    if (required && (!value || value.trim() === '')) {
+        return { valid: false, error: 'Campo obrigatório.' };
+    }
+    if (minLength && value.length < minLength) {
+        return { valid: false, error: `Mínimo de ${minLength} caracteres.` };
+    }
+    if (maxLength && value.length > maxLength) {
+        return { valid: false, error: `Máximo de ${maxLength} caracteres.` };
+    }
+    if (pattern && !pattern.test(value)) {
+        return { valid: false, error: 'Formato inválido.' };
+    }
+    return { valid: true };
+}
+
+// Exemplo de função utilitária assíncrona
+export async function fetchJson(url, options = {}) {
+    const response = await fetch(url, options);
+    if (!response.ok) throw new Error('Erro ao buscar dados');
+    return response.json();
+}
+
+export {
+  slugify,
+  downloadFile,
+  showFeedback,
+  debounce,
+  getCSSSelector,
+  getRobustXPath,
+  isExtensionContextValid,
+  getSelectors,
+  limparTexto,
+  toPascalCase,
+  escapeXPathText,
+  gerarIdUnico,
+  SemanticNameResolver,
+  XPathGenerator
+};
