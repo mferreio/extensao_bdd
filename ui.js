@@ -17,6 +17,215 @@ import { getConfig } from './config.js';
     --color-success: #28a745;
     --color-warning: #ffc107;
     --color-border: #e0e6ed;
+    --color-modal-overlay: rgba(0,0,0,0.32);
+    --color-modal-bg: #fff;
+    --color-modal-bg-dark: #232837;
+    --color-shadow: rgba(0,0,0,0.13);
+    --color-shadow-strong: rgba(0,0,0,0.18);
+    --color-text: #1a2330;
+    --color-text-light: #fff;
+    --color-muted: #555;
+    --color-footer: #aaa;
+    --btn-radius: 9px;
+    --btn-height: 42px;
+    --btn-min-width: 110px;
+    --btn-font-size: 1.07rem;
+    --btn-shadow: 0 2px 8px rgba(0,112,243,0.08);
+    --input-radius: 8px;
+    --input-height: 38px;
+    --input-font-size: 1rem;
+}
+
+.gherkin-modal-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: var(--color-modal-overlay);
+    z-index: 2147483647;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeInModalBg 0.22s;
+}
+.gherkin-modal-content {
+    background: var(--color-modal-bg);
+    color: var(--color-text);
+    border-radius: 14px;
+    box-shadow: 0 4px 32px var(--color-shadow-strong);
+    padding: 28px 32px 22px 32px;
+    min-width: 320px;
+    max-width: 96vw;
+    max-height: 80vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    animation: slideIn 0.33s;
+    font-size: 1.04rem;
+}
+@media (max-width: 600px) {
+    .gherkin-modal-content {
+        min-width: 0;
+        width: 98vw;
+        padding: 18px 4vw 18px 4vw;
+    }
+}
+.gherkin-modal-content label {
+    font-weight: 600;
+    color: var(--color-accent);
+    margin-bottom: 2px;
+    font-size: 1.04rem;
+    letter-spacing: 0.01em;
+}
+.gherkin-modal-content input[type="text"],
+.gherkin-modal-content input[type="number"],
+.gherkin-modal-content textarea,
+.gherkin-modal-content select {
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    transition: border 0.2s, background 0.2s;
+    border-radius: var(--input-radius);
+    border: 1.5px solid var(--color-border);
+    font-size: var(--input-font-size);
+    margin-bottom: 4px;
+    background: var(--color-bg-alt);
+    color: var(--color-text);
+    padding: 0 12px;
+    height: var(--input-height);
+    outline: none;
+}
+.gherkin-modal-content input[type="text"]:focus,
+.gherkin-modal-content input[type="number"]:focus,
+.gherkin-modal-content textarea:focus,
+.gherkin-modal-content select:focus {
+    border: 1.5px solid var(--color-primary);
+    background: #f1f8ff;
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+}
+.gherkin-modal-content button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 22px;
+    min-width: var(--btn-min-width);
+    height: var(--btn-height);
+    background-color: var(--color-primary);
+    color: var(--color-text-light);
+    border: none;
+    border-radius: var(--btn-radius);
+    cursor: pointer;
+    font-size: var(--btn-font-size);
+    font-weight: 600;
+    box-shadow: var(--btn-shadow);
+    margin: 0 4px 6px 0;
+    transition: background 0.18s, color 0.18s, box-shadow 0.18s, transform 0.13s;
+    outline: none;
+}
+.gherkin-modal-content button:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+.gherkin-modal-content button:hover {
+    background-color: var(--color-primary-dark);
+    color: var(--color-text-light);
+    transform: scale(1.035);
+}
+.gherkin-modal-content button:disabled {
+    background-color: #cccccc;
+    color: #eee;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+.gherkin-modal-content .gherkin-btn-danger {
+    background: var(--color-danger);
+    color: #fff;
+}
+.gherkin-modal-content .gherkin-btn-danger:hover {
+    background: #c0392b;
+}
+.gherkin-modal-content .gherkin-btn-success {
+    background: var(--color-success);
+    color: #fff;
+}
+.gherkin-modal-content .gherkin-btn-success:hover {
+    background: #218838;
+}
+.gherkin-modal-content .gherkin-btn-warning {
+    background: var(--color-warning);
+    color: #222;
+}
+.gherkin-modal-content .gherkin-btn-warning:hover {
+    background: #e0a800;
+}
+.gherkin-modal-content .gherkin-feedback {
+    margin: 6px 0;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    background: #eafaf1;
+    color: #218838;
+    border: 1.5px solid #28a745;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    transition: background 0.2s, color 0.2s;
+}
+.gherkin-modal-content .gherkin-feedback.error {
+    background: #fff6f6;
+    color: #e74c3c;
+    border-color: #e74c3c;
+}
+.gherkin-modal-content .gherkin-feedback.info {
+    background: #f7faff;
+    color: #0070f3;
+    border-color: #0070f3;
+}
+.gherkin-modal-content .gherkin-feedback .gherkin-feedback-icon {
+    font-size: 1.3em;
+    display: inline-block;
+    vertical-align: middle;
+}
+.gherkin-modal-content .gherkin-tip {
+    background: #f7faff;
+    border-left: 4px solid #0070f3;
+    padding: 8px 14px;
+    border-radius: 6px;
+    color: #0070f3;
+    font-size: 0.98rem;
+    margin-bottom: 6px;
+    margin-top: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+.gherkin-modal-content .gherkin-tip .gherkin-tip-icon {
+    font-size: 1.2em;
+    margin-right: 4px;
+    color: #0070f3;
+}
+.gherkin-modal-content .gherkin-summary {
+    background: #f4f7fb;
+    border-radius: 7px;
+    padding: 8px 12px;
+    font-size: 0.98rem;
+    color: #222;
+    margin-bottom: 8px;
+}
+.gherkin-modal-content .gherkin-divider {
+    border: none;
+    border-top: 1px solid #e3e3e3;
+    margin: 12px 0 8px 0;
+}
+@keyframes fadeInModalBg {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
     --color-shadow: rgba(0,0,0,0.10);
     --color-log-bg: #f1f8ff;
     --color-log-bg-alt: #e3f2fd;
@@ -162,7 +371,7 @@ body, h1 {
     min-width: var(--btn-min-width);
     height: var(--btn-height);
     background-color: var(--color-primary);
-    color: var(--color-text-light);
+    color: var(--color-text-light;
     border: none;
     border-radius: var(--btn-radius);
     cursor: pointer;
@@ -484,41 +693,29 @@ body, h1 {
 
 
 
-// Modal para upload de arquivo de exemplo
-function showUploadModal(nomeElemento, cssSelector, xpath, callback) {
-    // Remove modal antigo se existir
+// Função para exibir modal de upload de arquivos de evidência
+function showUploadModal(callback) {
     const oldModal = document.getElementById('gherkin-modal');
     if (oldModal) oldModal.remove();
     const modalBg = document.createElement('div');
     modalBg.id = 'gherkin-modal';
-    modalBg.style.position = 'fixed';
-    modalBg.style.top = '0';
-    modalBg.style.left = '0';
-    modalBg.style.width = '100vw';
-    modalBg.style.height = '100vh';
-    modalBg.style.background = 'rgba(0,0,0,0.25)';
-    modalBg.style.display = 'flex';
-    modalBg.style.alignItems = 'center';
-    modalBg.style.justifyContent = 'center';
+    modalBg.className = 'gherkin-modal-bg';
+    modalBg.setAttribute('role', 'dialog');
+    modalBg.setAttribute('aria-modal', 'true');
+    modalBg.setAttribute('aria-label', 'Upload de arquivos de evidência');
+    modalBg.tabIndex = -1;
     modalBg.style.zIndex = '10003';
     const modal = document.createElement('div');
-    modal.style.background = '#fff';
-    modal.style.padding = '28px 32px 22px 32px';
-    modal.style.borderRadius = '12px';
-    modal.style.boxShadow = '0 4px 24px rgba(0,0,0,0.18)';
-    modal.style.display = 'flex';
-    modal.style.flexDirection = 'column';
-    modal.style.alignItems = 'center';
-    modal.style.gap = '18px';
-    modal.style.minWidth = '260px';
-    modalBg.className = 'gherkin-modal-bg';
     modal.className = 'gherkin-modal-content';
+    modal.setAttribute('role', 'document');
     // Título
     const title = document.createElement('div');
     title.textContent = 'Upload de arquivos de evidência';
     title.style.fontSize = '17px';
     title.style.color = '#0D47A1';
     title.style.textAlign = 'center';
+    title.id = 'gherkin-modal-title';
+    modal.setAttribute('aria-labelledby', 'gherkin-modal-title');
     modal.appendChild(title);
     // Lista dinâmica de arquivos
     const filesContainer = document.createElement('div');
@@ -539,11 +736,15 @@ function showUploadModal(nomeElemento, cssSelector, xpath, callback) {
         input.value = value;
         input.style.flex = '1';
         input.autocomplete = 'off';
+        input.setAttribute('aria-label', 'Nome do arquivo de evidência');
+        input.tabIndex = 0;
         fileRow.appendChild(input);
         const removeBtn = document.createElement('button');
         removeBtn.type = 'button';
         removeBtn.textContent = 'Remover';
         removeBtn.className = 'gherkin-btn gherkin-btn-danger';
+        removeBtn.setAttribute('aria-label', 'Remover arquivo de evidência');
+        removeBtn.tabIndex = 0;
         removeBtn.onclick = () => {
             filesContainer.removeChild(fileRow);
         };
@@ -557,6 +758,8 @@ function showUploadModal(nomeElemento, cssSelector, xpath, callback) {
     addBtn.type = 'button';
     addBtn.textContent = 'Adicionar outro arquivo';
     addBtn.className = 'gherkin-btn gherkin-btn-success';
+    addBtn.setAttribute('aria-label', 'Adicionar outro arquivo de evidência');
+    addBtn.tabIndex = 0;
     addBtn.onclick = () => addFileInput();
     modal.appendChild(addBtn);
     // Botões de ação
@@ -569,6 +772,8 @@ function showUploadModal(nomeElemento, cssSelector, xpath, callback) {
     okBtn.type = 'button';
     okBtn.textContent = 'OK';
     okBtn.className = 'gherkin-btn gherkin-btn-main';
+    okBtn.setAttribute('aria-label', 'Confirmar upload de arquivos');
+    okBtn.tabIndex = 0;
     okBtn.onclick = () => {
         const nomesArquivos = Array.from(filesContainer.querySelectorAll('input[type="text"]'))
             .map(input => input.value.trim())
@@ -586,12 +791,37 @@ function showUploadModal(nomeElemento, cssSelector, xpath, callback) {
     cancelBtn.type = 'button';
     cancelBtn.textContent = 'Cancelar';
     cancelBtn.className = 'gherkin-btn gherkin-btn-danger';
+    cancelBtn.setAttribute('aria-label', 'Cancelar upload de arquivos');
+    cancelBtn.tabIndex = 0;
     cancelBtn.onclick = () => modalBg.remove();
     actionsRow.appendChild(cancelBtn);
     modal.appendChild(actionsRow);
     modalBg.appendChild(modal);
     document.body.appendChild(modalBg);
+    // Foco inicial e navegação por teclado
+    setTimeout(() => {
+        const focusables = modalBg.querySelectorAll('input, button, [tabindex="0"]');
+        if (focusables.length) focusables[0].focus();
+        modalBg.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                const focusable = Array.from(focusables);
+                let idx = focusable.indexOf(document.activeElement);
+                if (e.shiftKey) {
+                    idx = idx <= 0 ? focusable.length - 1 : idx - 1;
+                } else {
+                    idx = idx === focusable.length - 1 ? 0 : idx + 1;
+                }
+                focusable[idx].focus();
+                e.preventDefault();
+            } else if (e.key === 'Escape') {
+                modalBg.remove();
+            } else if ((e.key === 'Enter' || e.key === ' ') && document.activeElement.tagName === 'BUTTON') {
+                document.activeElement.click();
+            }
+        });
+    }, 50);
 }
+
 // Função para criar o painel e renderizar o conteúdo inicial
 function createPanel() {
     const oldPanel = document.getElementById('gherkin-panel');
@@ -614,7 +844,30 @@ function createPanel() {
     panel.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
     panel.setAttribute('role', 'dialog');
     panel.setAttribute('aria-label', 'Painel Gherkin Generator');
+    panel.tabIndex = -1;
     renderPanelContent(panel);
+    // Foco inicial e navegação por teclado
+    setTimeout(() => {
+        const focusables = panel.querySelectorAll('input, button, select, [tabindex="0"]');
+        if (focusables.length) focusables[0].focus();
+        panel.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                const focusable = Array.from(focusables);
+                let idx = focusable.indexOf(document.activeElement);
+                if (e.shiftKey) {
+                    idx = idx <= 0 ? focusable.length - 1 : idx - 1;
+                } else {
+                    idx = idx === focusable.length - 1 ? 0 : idx + 1;
+                }
+                focusable[idx].focus();
+                e.preventDefault();
+            } else if (e.key === 'Escape') {
+                panel.remove();
+            } else if ((e.key === 'Enter' || e.key === ' ') && document.activeElement.tagName === 'BUTTON') {
+                document.activeElement.click();
+            }
+        });
+    }, 50);
     document.body.appendChild(panel);
     return panel;
 }
@@ -736,59 +989,56 @@ function showLoginModal() {
     if (oldModal) oldModal.remove();
     const modalBg = document.createElement('div');
     modalBg.id = 'gherkin-modal';
-    modalBg.style.position = 'fixed';
-    modalBg.style.top = '0';
-    modalBg.style.left = '0';
-    modalBg.style.width = '100vw';
-    modalBg.style.height = '100vh';
-    modalBg.style.background = 'rgba(0,0,0,0.25)';
-    modalBg.style.display = 'flex';
-    modalBg.style.alignItems = 'center';
-    modalBg.style.justifyContent = 'center';
+    modalBg.className = 'gherkin-modal-bg';
+    modalBg.setAttribute('role', 'dialog');
+    modalBg.setAttribute('aria-modal', 'true');
+    modalBg.setAttribute('aria-label', 'Marcar ação como Login');
+    modalBg.tabIndex = -1;
     modalBg.style.zIndex = '10003';
     const modal = document.createElement('div');
-    modal.style.background = '#fff';
-    modal.style.padding = '28px 32px 22px 32px';
-    modal.style.borderRadius = '12px';
-    modal.style.boxShadow = '0 4px 24px rgba(0,0,0,0.18)';
-    modal.style.display = 'flex';
-    modal.style.flexDirection = 'column';
-    modal.style.alignItems = 'center';
-    modal.style.gap = '18px';
-    modal.style.minWidth = '260px';
-    modalBg.className = 'gherkin-modal-bg';
     modal.className = 'gherkin-modal-content';
+    modal.setAttribute('role', 'document');
     const title = document.createElement('div');
     title.textContent = 'Marcar ação como Login';
     title.style.fontSize = '17px';
     title.style.color = '#0D47A1';
     title.style.textAlign = 'center';
+    title.id = 'gherkin-login-title';
+    modal.setAttribute('aria-labelledby', 'gherkin-login-title');
     modal.appendChild(title);
     const userLabel = document.createElement('label');
     userLabel.textContent = 'Usuário/Email:';
     userLabel.style.fontWeight = 'bold';
     userLabel.style.marginBottom = '4px';
+    userLabel.setAttribute('for', 'gherkin-login-user');
     modal.appendChild(userLabel);
     const userInput = document.createElement('input');
     userInput.type = 'text';
+    userInput.id = 'gherkin-login-user';
     userInput.style.width = '100%';
     userInput.style.padding = '7px';
     userInput.style.borderRadius = '5px';
     userInput.style.border = '1px solid #ccc';
     userInput.style.fontSize = '14px';
+    userInput.setAttribute('aria-label', 'Usuário ou Email');
+    userInput.tabIndex = 0;
     modal.appendChild(userInput);
     const passLabel = document.createElement('label');
     passLabel.textContent = 'Senha:';
     passLabel.style.fontWeight = 'bold';
     passLabel.style.marginBottom = '4px';
+    passLabel.setAttribute('for', 'gherkin-login-pass');
     modal.appendChild(passLabel);
     const passInput = document.createElement('input');
     passInput.type = 'password';
+    passInput.id = 'gherkin-login-pass';
     passInput.style.width = '100%';
     passInput.style.padding = '7px';
     passInput.style.borderRadius = '5px';
     passInput.style.border = '1px solid #ccc';
     passInput.style.fontSize = '14px';
+    passInput.setAttribute('aria-label', 'Senha');
+    passInput.tabIndex = 0;
     modal.appendChild(passInput);
     const btns = document.createElement('div');
     btns.style.display = 'flex';
@@ -796,6 +1046,8 @@ function showLoginModal() {
     btns.style.marginTop = '12px';
     const saveBtn = document.createElement('button');
     saveBtn.textContent = 'Salvar Login';
+    saveBtn.setAttribute('aria-label', 'Salvar Login');
+    saveBtn.tabIndex = 0;
     saveBtn.style.background = '#007bff';
     saveBtn.style.color = '#fff';
     saveBtn.style.border = 'none';
@@ -826,6 +1078,8 @@ function showLoginModal() {
     };
     const cancelBtn = document.createElement('button');
     cancelBtn.textContent = 'Cancelar';
+    cancelBtn.setAttribute('aria-label', 'Cancelar login');
+    cancelBtn.tabIndex = 0;
     cancelBtn.style.background = '#dc3545';
     cancelBtn.style.color = '#fff';
     cancelBtn.style.border = 'none';
@@ -840,6 +1094,291 @@ function showLoginModal() {
     modal.appendChild(btns);
     modalBg.appendChild(modal);
     document.body.appendChild(modalBg);
+    // Foco inicial e navegação por teclado
+    setTimeout(() => {
+        const focusables = modalBg.querySelectorAll('input, button, [tabindex="0"]');
+        if (focusables.length) focusables[0].focus();
+        modalBg.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                const focusable = Array.from(focusables);
+                let idx = focusable.indexOf(document.activeElement);
+                if (e.shiftKey) {
+                    idx = idx <= 0 ? focusable.length - 1 : idx - 1;
+                } else {
+                    idx = idx === focusable.length - 1 ? 0 : idx + 1;
+                }
+                focusable[idx].focus();
+                e.preventDefault();
+            } else if (e.key === 'Escape') {
+                modalBg.remove();
+            } else if ((e.key === 'Enter' || e.key === ' ') && document.activeElement.tagName === 'BUTTON') {
+                document.activeElement.click();
+            }
+        });
+    }, 50);
+}
+
+// Função utilitária para exibir modal de confirmação
+function showModal(message, onYes, onNo) {
+    const oldModal = document.getElementById('gherkin-modal');
+    if (oldModal) oldModal.remove();
+    const modalBg = document.createElement('div');
+    modalBg.id = 'gherkin-modal';
+    modalBg.className = 'gherkin-modal-bg';
+    modalBg.setAttribute('role', 'dialog');
+    modalBg.setAttribute('aria-modal', 'true');
+    modalBg.setAttribute('aria-label', 'Confirmação');
+    modalBg.tabIndex = -1;
+    modalBg.style.zIndex = '10001';
+    const modal = document.createElement('div');
+    modal.className = 'gherkin-modal-content';
+    modal.setAttribute('role', 'document');
+    const msg = document.createElement('div');
+    msg.textContent = message;
+    msg.style.fontSize = '17px';
+    msg.style.color = '#0D47A1';
+    msg.style.textAlign = 'center';
+    msg.id = 'gherkin-modal-confirm-title';
+    modal.setAttribute('aria-labelledby', 'gherkin-modal-confirm-title');
+    modal.appendChild(msg);
+    const btns = document.createElement('div');
+    btns.style.display = 'flex';
+    btns.style.gap = '18px';
+    const yesBtn = document.createElement('button');
+    yesBtn.textContent = 'Sim';
+    yesBtn.setAttribute('aria-label', 'Confirmar');
+    yesBtn.tabIndex = 0;
+    yesBtn.style.background = '#007bff';
+    yesBtn.style.color = '#fff';
+    yesBtn.style.border = 'none';
+    yesBtn.style.borderRadius = '6px';
+    yesBtn.style.padding = '8px 22px';
+    yesBtn.style.fontSize = '15px';
+    yesBtn.style.fontWeight = 'bold';
+    yesBtn.style.cursor = 'pointer';
+    yesBtn.onclick = () => {
+        modalBg.remove();
+        if (onYes) onYes();
+    };
+    const noBtn = document.createElement('button');
+    noBtn.textContent = 'Não';
+    noBtn.setAttribute('aria-label', 'Cancelar');
+    noBtn.tabIndex = 0;
+    noBtn.style.background = '#dc3545';
+    noBtn.style.color = '#fff';
+    noBtn.style.border = 'none';
+    noBtn.style.borderRadius = '6px';
+    noBtn.style.padding = '8px 22px';
+    noBtn.style.fontSize = '15px';
+    noBtn.style.fontWeight = 'bold';
+    noBtn.style.cursor = 'pointer';
+    noBtn.onclick = () => {
+        modalBg.remove();
+        if (onNo) onNo();
+    };
+    btns.appendChild(yesBtn);
+    btns.appendChild(noBtn);
+    modal.appendChild(btns);
+    modalBg.appendChild(modal);
+    document.body.appendChild(modalBg);
+    // Foco inicial e navegação por teclado
+    setTimeout(() => {
+        const focusables = modalBg.querySelectorAll('button, [tabindex="0"]');
+        if (focusables.length) focusables[0].focus();
+        modalBg.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                const focusable = Array.from(focusables);
+                let idx = focusable.indexOf(document.activeElement);
+                if (e.shiftKey) {
+                    idx = idx <= 0 ? focusable.length - 1 : idx - 1;
+                } else {
+                    idx = idx === focusable.length - 1 ? 0 : idx + 1;
+                }
+                focusable[idx].focus();
+                e.preventDefault();
+            } else if (e.key === 'Escape') {
+                modalBg.remove();
+            } else if ((e.key === 'Enter' || e.key === ' ') && document.activeElement.tagName === 'BUTTON') {
+                document.activeElement.click();
+            }
+        });
+    }, 50);
+}
+
+// Exibe detalhes de uma interação em um modal, incluindo contexto Shadow DOM/Iframe
+function showLogDetailsModal(interaction) {
+    const oldModal = document.getElementById('gherkin-modal');
+    if (oldModal) oldModal.remove();
+    const modalBg = document.createElement('div');
+    modalBg.id = 'gherkin-modal';
+    modalBg.className = 'gherkin-modal-bg';
+    modalBg.setAttribute('role', 'dialog');
+    modalBg.setAttribute('aria-modal', 'true');
+    modalBg.setAttribute('aria-label', 'Detalhes da Interação');
+    modalBg.tabIndex = -1;
+    modalBg.style.zIndex = '2147483647';
+    const modal = document.createElement('div');
+    modal.className = 'gherkin-modal-content';
+    modal.setAttribute('role', 'document');
+    modal.style.minWidth = '340px';
+    modal.style.maxWidth = '96vw';
+    modal.style.padding = '28px 32px 22px 32px';
+    modal.style.position = 'relative';
+    const title = document.createElement('div');
+    title.textContent = 'Detalhes da Interação';
+    title.style.fontSize = '18px';
+    title.style.fontWeight = 'bold';
+    title.style.color = '#0D47A1';
+    title.style.marginBottom = '10px';
+    title.id = 'gherkin-modal-details-title';
+    modal.setAttribute('aria-labelledby', 'gherkin-modal-details-title');
+    modal.appendChild(title);
+    // Tabela de detalhes
+    const table = document.createElement('table');
+    table.style.width = '100%';
+    table.style.fontSize = '1rem';
+    table.style.marginBottom = '10px';
+    table.innerHTML = `
+        <tr><td style='font-weight:bold;'>Ação:</td><td>${(window.ACTION_META && window.ACTION_META[interaction.acao]?.label) || interaction.acao || ''}</td></tr>
+        <tr><td style='font-weight:bold;'>Elemento:</td><td>${interaction.nomeElemento || ''}</td></tr>
+        <tr><td style='font-weight:bold;'>Valor:</td><td>${interaction.valorPreenchido || interaction.nomeArquivo || ''}</td></tr>
+        <tr><td style='font-weight:bold;'>CSS Selector:</td><td><code>${typeof interaction.cssSelector === 'object' ? interaction.cssSelector?.css : interaction.cssSelector || ''}</code></td></tr>
+        <tr><td style='font-weight:bold;'>XPath:</td><td><code>${typeof interaction.xpath === 'object' ? interaction.xpath?.xpath : interaction.xpath || ''}</code></td></tr>
+    `;
+    modal.appendChild(table);
+
+    // Indicação de contexto Shadow DOM/Iframe
+    if (interaction.containerType === 'iframe' || interaction.containerType === 'shadow') {
+        const ctxDiv = document.createElement('div');
+        ctxDiv.style.background = interaction.containerType === 'iframe' ? '#e3f2fd' : '#fffde7';
+        ctxDiv.style.color = interaction.containerType === 'iframe' ? '#1565c0' : '#bfa100';
+        ctxDiv.style.padding = '10px 14px';
+        ctxDiv.style.borderRadius = '7px';
+        ctxDiv.style.marginBottom = '10px';
+        ctxDiv.style.fontWeight = 'bold';
+        ctxDiv.style.display = 'flex';
+        ctxDiv.style.alignItems = 'center';
+        ctxDiv.style.gap = '10px';
+        ctxDiv.innerHTML = `
+            <span style="font-size:1.3em;">${interaction.containerType === 'iframe' ? '🖼️' : '🌑'}</span>
+            <span>
+                ${interaction.containerType === 'iframe' ? 'Elemento dentro de <b>iframe</b>' : 'Elemento dentro de <b>Shadow DOM</b>'}
+                ${interaction.containerElementName ? `<br><span style='font-weight:normal;'>Container: <code>${interaction.containerElementName}</code></span>` : ''}
+                ${interaction.containerXpath ? `<br><span style='font-weight:normal;'>XPath do container: <code>${typeof interaction.containerXpath === 'object' ? interaction.containerXpath?.xpath : interaction.containerXpath}</code></span>` : ''}
+            </span>
+        `;
+        modal.appendChild(ctxDiv);
+    }
+
+    // Timestamp
+    if (interaction.timestamp) {
+        const ts = document.createElement('div');
+        const date = new Date(interaction.timestamp);
+        ts.textContent = 'Registrado em: ' + date.toLocaleString();
+        ts.style.fontSize = '0.97em';
+        ts.style.color = '#888';
+        ts.style.marginBottom = '8px';
+        modal.appendChild(ts);
+    }
+
+    // Botão fechar
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = 'Fechar';
+    closeBtn.className = 'gherkin-btn gherkin-btn-danger';
+    closeBtn.setAttribute('aria-label', 'Fechar detalhes da interação');
+    closeBtn.tabIndex = 0;
+    closeBtn.style.marginTop = '10px';
+    closeBtn.onclick = () => modalBg.remove();
+    modal.appendChild(closeBtn);
+    modalBg.appendChild(modal);
+    document.body.appendChild(modalBg);
+    // Foco inicial e navegação por teclado
+    setTimeout(() => {
+        const focusables = modalBg.querySelectorAll('button, [tabindex="0"]');
+        if (focusables.length) focusables[0].focus();
+        modalBg.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                const focusable = Array.from(focusables);
+                let idx = focusable.indexOf(document.activeElement);
+                if (e.shiftKey) {
+                    idx = idx <= 0 ? focusable.length - 1 : idx - 1;
+                } else {
+                    idx = idx === focusable.length - 1 ? 0 : idx + 1;
+                }
+                focusable[idx].focus();
+                e.preventDefault();
+            } else if (e.key === 'Escape') {
+                modalBg.remove();
+            } else if ((e.key === 'Enter' || e.key === ' ') && document.activeElement.tagName === 'BUTTON') {
+                document.activeElement.click();
+            }
+        });
+    }, 50);
+}
+
+// Pilhas globais para Undo/Redo
+if (!window.gherkinUndoStack) window.gherkinUndoStack = [];
+if (!window.gherkinRedoStack) window.gherkinRedoStack = [];
+
+// Funções Undo/Redo
+function undoInteraction() {
+    if (window.interactions && window.interactions.length > 0) {
+        const last = window.interactions.pop();
+        window.gherkinUndoStack.push(last);
+        window.gherkinRedoStack.push(last);
+        if (typeof saveInteractionsToStorage === 'function') saveInteractionsToStorage();
+        renderLogWithActions();
+    }
+}
+function redoInteraction() {
+    if (window.gherkinRedoStack && window.gherkinRedoStack.length > 0) {
+        const redo = window.gherkinRedoStack.pop();
+        window.interactions.push(redo);
+        if (typeof saveInteractionsToStorage === 'function') saveInteractionsToStorage();
+        renderLogWithActions();
+    }
+}
+
+// Adiciona botões Undo/Redo ao painel de log
+function addUndoRedoButtons() {
+    const log = document.getElementById('gherkin-log');
+    if (!log) return;
+    let btnRow = document.getElementById('gherkin-undo-redo-row');
+    if (!btnRow) {
+        btnRow = document.createElement('div');
+        btnRow.id = 'gherkin-undo-redo-row';
+        btnRow.style.display = 'flex';
+        btnRow.style.gap = '8px';
+        btnRow.style.margin = '6px 0 8px 0';
+        log.prepend(btnRow);
+    } else {
+        btnRow.innerHTML = '';
+    }
+    // Botão Undo
+    const undoBtn = document.createElement('button');
+    undoBtn.textContent = 'Desfazer';
+    undoBtn.className = 'gherkin-btn gherkin-btn-warning';
+    undoBtn.disabled = !(window.interactions && window.interactions.length > 0);
+    undoBtn.onclick = () => {
+        undoInteraction();
+    };
+    btnRow.appendChild(undoBtn);
+    // Botão Redo
+    const redoBtn = document.createElement('button');
+    redoBtn.textContent = 'Refazer';
+    redoBtn.className = 'gherkin-btn gherkin-btn-success';
+    redoBtn.disabled = !(window.gherkinRedoStack && window.gherkinRedoStack.length > 0);
+    redoBtn.onclick = () => {
+        redoInteraction();
+    };
+    btnRow.appendChild(redoBtn);
+}
+
+// Modifica renderLogWithActions para incluir os botões Undo/Redo
+const originalRenderLogWithActions = renderLogWithActions;
+renderLogWithActions = function() {
+    originalRenderLogWithActions.apply(this, arguments);
+    addUndoRedoButtons();
 }
 
 // Adaptação dinâmica dos parâmetros de ação
@@ -871,8 +1410,7 @@ function updateActionParams(panel) {
         'espera_nao_existe': 'Clique no elemento que deseja aguardar desaparecer.',
         'espera_existe': 'Clique no elemento que deseja aguardar que exista.',
         'espera_habilitado': 'Clique no elemento que deseja aguardar que esteja habilitado.',
-        'espera_desabilitado': 'Clique no elemento que deseja aguardar que esteja desabilitado.',
-        'valida_url': 'Valida se a URL atual da página é igual à informada. Use para garantir que a navegação ocorreu corretamente.'
+        'espera_desabilitado': 'Clique no elemento que deseja aguardar que esteja desabilitado.'
     };
 
     paramsDiv.innerHTML = '';
@@ -1028,51 +1566,34 @@ function makePanelDraggable(panel) {
 
 // Função utilitária para exibir modal de confirmação
 function showModal(message, onYes, onNo) {
-    // Remove modal antigo se existir
     const oldModal = document.getElementById('gherkin-modal');
     if (oldModal) oldModal.remove();
     const modalBg = document.createElement('div');
     modalBg.id = 'gherkin-modal';
-    modalBg.style.position = 'fixed';
-    modalBg.style.top = '0';
-    modalBg.style.left = '0';
-    modalBg.style.width = '100vw';
-    modalBg.style.height = '100vh';
-    modalBg.style.background = 'rgba(0,0,0,0.25)';
-    modalBg.style.display = 'flex';
-    modalBg.style.alignItems = 'center';
-    modalBg.style.justifyContent = 'center';
-    modalBg.style.zIndex = '10001';
-
-    const modal = document.createElement('div');
-    modal.style.background = '#fff';
-    modal.style.padding = '28px 32px 22px 32px';
-    modal.style.borderRadius = '12px';
-    modal.style.boxShadow = '0 4px 24px rgba(0,0,0,0.18)';
-    modal.style.display = 'flex';
-    modal.style.flexDirection = 'column';
-    modal.style.alignItems = 'center';
-    modal.style.gap = '18px';
-    modal.style.minWidth = '260px';
     modalBg.className = 'gherkin-modal-bg';
+    modalBg.setAttribute('role', 'dialog');
+    modalBg.setAttribute('aria-modal', 'true');
+    modalBg.setAttribute('aria-label', 'Confirmação');
+    modalBg.tabIndex = -1;
+    modalBg.style.zIndex = '10001';
+    const modal = document.createElement('div');
     modal.className = 'gherkin-modal-content';
-
+    modal.setAttribute('role', 'document');
     const msg = document.createElement('div');
     msg.textContent = message;
     msg.style.fontSize = '17px';
     msg.style.color = '#0D47A1';
     msg.style.textAlign = 'center';
+    msg.id = 'gherkin-modal-confirm-title';
+    modal.setAttribute('aria-labelledby', 'gherkin-modal-confirm-title');
     modal.appendChild(msg);
-
     const btns = document.createElement('div');
     btns.style.display = 'flex';
     btns.style.gap = '18px';
-
     const yesBtn = document.createElement('button');
     yesBtn.textContent = 'Sim';
-    yesBtn.style.background = '#007bff';
-    yesBtn.style.color = '#fff';
-    yesBtn.style.border = 'none';
+    yesBtn.setAttribute('aria-label', 'Confirmar');
+    yesBtn.tabIndex = 0;
     yesBtn.style.background = '#007bff';
     yesBtn.style.color = '#fff';
     yesBtn.style.border = 'none';
@@ -1085,9 +1606,10 @@ function showModal(message, onYes, onNo) {
         modalBg.remove();
         if (onYes) onYes();
     };
-
     const noBtn = document.createElement('button');
     noBtn.textContent = 'Não';
+    noBtn.setAttribute('aria-label', 'Cancelar');
+    noBtn.tabIndex = 0;
     noBtn.style.background = '#dc3545';
     noBtn.style.color = '#fff';
     noBtn.style.border = 'none';
@@ -1100,1435 +1622,228 @@ function showModal(message, onYes, onNo) {
         modalBg.remove();
         if (onNo) onNo();
     };
-
     btns.appendChild(yesBtn);
     btns.appendChild(noBtn);
     modal.appendChild(btns);
     modalBg.appendChild(modal);
     document.body.appendChild(modalBg);
-}
-
-// Ícones e cores para cada ação
-const ACTION_META = {
-    clica:      { icon: '🖱️', color: '#007bff', label: 'Clicar' },
-    preenche:   { icon: '⌨️', color: '#28a745', label: 'Preencher' },
-    seleciona:  { icon: '☑️', color: '#17a2b8', label: 'Selecionar' },
-    upload:     { icon: '📎', color: '#f39c12', label: 'Upload' },
-    login:      { icon: '🔑', color: '#8e44ad', label: 'Login' },
-    espera_segundos: { icon: '⏲️', color: '#ffc107', label: 'Esperar' },
-    espera_elemento: { icon: '⏳', color: '#0070f3', label: 'Esperar elemento' },
-    espera_nao_existe: { icon: '🚫', color: '#e74c3c', label: 'Esperar sumir' },
-    acessa_url: { icon: '🌐', color: '#0070f3', label: 'Acessar URL' },
-    altera:     { icon: '✏️', color: '#6c757d', label: 'Alterar' },
-    radio:      { icon: '🔘', color: '#6c757d', label: 'Radio' },
-    caixa:      { icon: '☑️', color: '#6c757d', label: 'Caixa' },
-    valida_existe: { icon: '✅', color: '#218838', label: 'Validar existe' },
-    valida_nao_existe: { icon: '❌', color: '#e74c3c', label: 'Validar não existe' },
-    valida_contem: { icon: '🔍', color: '#007bff', label: 'Validar contém' },
-    valida_nao_contem: { icon: '🚫', color: '#e74c3c', label: 'Validar não contém' },
-    valida_deve_ser: { icon: '✔️', color: '#218838', label: 'Validar deve ser' },
-    valida_nao_deve_ser: { icon: '❌', color: '#e74c3c', label: 'Validar não deve ser' },
-    valida_url: { icon: '🌐', color: '#0070f3', label: 'Validar URL' },
-    // ...adicione outros conforme necessário
-};
-
-// Utilitário para exportação
-function exportLog(format = 'csv') {
-    const data = window.interactions || [];
-    if (!data.length) {
-        showFeedback('Nenhum log para exportar!', 'error');
-        return;
-    }
-    let content = '';
-    if (format === 'csv') {
-        content = 'Gherkin,Ação,Elemento,Valor,Timestamp,Selector,XPath\n' +
-            data.map(i =>
-                [
-                    i.step,
-                    (ACTION_META[i.acao]?.label || i.acao),
-                    `"${i.nomeElemento || ''}"`,
-                    `"${i.valorPreenchido || i.nomeArquivo || ''}"`,
-                    i.timestamp || '',
-                    `"${(i.cssSelector && typeof i.cssSelector === 'object' ? i.cssSelector.css : i.cssSelector) || ''}"`,
-                    `"${(i.xpath && typeof i.xpath === 'object' ? i.xpath.xpath : i.xpath) || ''}"`
-                ].join(',')
-            ).join('\n');
-        downloadFile('gherkin_log.csv', content);
-    } else if (format === 'json') {
-        content = JSON.stringify(data, null, 2);
-        downloadFile('gherkin_log.json', content);
-    } else if (format === 'md') {
-        content = '| Gherkin | Ação | Elemento | Valor | Timestamp |\n|---|---|---|---|---|\n' +
-            data.map(i =>
-                `| ${i.step} | ${(ACTION_META[i.acao]?.label || i.acao)} | ${i.nomeElemento || ''} | ${i.valorPreenchido || i.nomeArquivo || ''} | ${i.timestamp || ''} |`
-            ).join('\n');
-        downloadFile('gherkin_log.md', content);
-    }
-    showFeedback('Log exportado com sucesso!');
-}
-
-    // Função para renderizar o log em formato de tabela (sem filtros)
-function renderLogWithActions() {
-    const log = document.getElementById('gherkin-log');
-    if (!log) return;
-    log.innerHTML = '';
-
-    // Wrapper da tabela: ocupa todo o espaço disponível do log
-    const tableWrap = document.createElement('div');
-    tableWrap.style.flex = '1 1 auto';
-    tableWrap.style.display = 'flex';
-    tableWrap.style.flexDirection = 'column';
-    tableWrap.style.overflow = 'hidden';
-    tableWrap.style.width = '100%';
-    tableWrap.style.minHeight = '0';
-    tableWrap.style.background = '#fff';
-    tableWrap.tabIndex = 0;
-
-    // Container para rolagem da tabela
-    const scrollContainer = document.createElement('div');
-    scrollContainer.style.flex = '1 1 auto';
-    scrollContainer.style.overflowX = 'auto';
-    scrollContainer.style.overflowY = 'auto';
-    scrollContainer.style.width = '100%';
-    scrollContainer.style.minHeight = '0';
-    scrollContainer.style.background = '#fff';
-
-    // Tabela ocupa largura mínima para não cortar colunas e fica "fixa" dentro do scrollContainer
-    const table = document.createElement('table');
-    table.className = 'gherkin-log-table';
-    table.style.width = '100%';
-    table.style.minWidth = '700px';
-    table.style.borderCollapse = 'collapse';
-    table.style.fontSize = '13px';
-    table.style.background = '#fff';
-    // Remover height 100% da tabela para não "esticar" a linha única
-    // table.style.height = '100%';
-
-    // Cabeçalho
-    const thead = document.createElement('thead');
-    thead.innerHTML = `
-        <tr>
-            <th style="min-width:60px;">Gherkin</th>
-            <th style="min-width:80px;">Ação</th>
-            <th style="min-width:120px;">Elemento</th>
-            <th style="min-width:100px;">Valor</th>
-            <th style="min-width:40px;">Detalhes</th>
-            <th style="min-width:40px;">Ações</th>
-        </tr>
-    `;
-    table.appendChild(thead);
-
-    // Corpo da tabela
-    const tbody = document.createElement('tbody');
-    table.appendChild(tbody);
-
-    // Renderiza todas as interações (sem filtro)
-    function renderRows() {
-        tbody.innerHTML = '';
-        const filtered = window.interactions || [];
-
-        if (!filtered.length) {
-            const tr = document.createElement('tr');
-            const td = document.createElement('td');
-            td.colSpan = 5;
-            td.textContent = 'Nenhuma interação encontrada.';
-            td.style.textAlign = 'center';
-            tr.appendChild(td);
-            tbody.appendChild(tr);
-            return;
-        }
-
-        filtered.forEach((i, idx) => {
-            const tr = document.createElement('tr');
-            tr.tabIndex = 0;
-            tr.setAttribute('role', 'button');
-            tr.setAttribute('aria-label', `Ver detalhes da interação ${idx + 1}`);
-            tr.style.cursor = 'pointer';
-            tr.style.transition = 'background 0.15s';
-            tr.onmouseenter = () => tr.style.background = '#f7faff';
-            tr.onmouseleave = () => tr.style.background = '';
-            tr.onfocus = () => tr.style.background = '#e3f2fd';
-            tr.onblur = () => tr.style.background = '';
-
-            // Gherkin
-            const tdStep = document.createElement('td');
-            tdStep.textContent = i.step || '';
-            tdStep.style.fontWeight = 'bold';
-            tdStep.style.color = '#0070f3';
-            tdStep.style.textAlign = 'center';
-            tr.appendChild(tdStep);
-
-            // Ação
-            const tdAcao = document.createElement('td');
-            const meta = ACTION_META[i.acao] || {};
-            tdAcao.innerHTML = `<span style="font-size:1.2em;margin-right:4px;color:${meta.color || '#222'}">${meta.icon || ''}</span>${meta.label || i.acao}`;
-            tr.appendChild(tdAcao);
-
-            // Elemento
-            const tdElem = document.createElement('td');
-            if (i.acao === 'valida_url') {
-                tdElem.textContent = i.urlEsperada || '';
-            } else if (i.nomeElemento && i.nomeElemento.includes('|')) {
-                const partes = i.nomeElemento.split('|');
-                tdElem.textContent = partes[1].trim();
-            } else {
-                tdElem.textContent = i.nomeElemento || '';
-            }
-            tdElem.style.fontFamily = 'inherit';
-            tr.appendChild(tdElem);
-
-            // Valor preenchido (nova coluna)
-            const tdValor = document.createElement('td');
-            if (i.acao === 'preenche') {
-                tdValor.textContent = i.valorPreenchido || '';
-            } else if (i.acao === 'upload') {
-                tdValor.textContent = i.nomeArquivo || '';
-            } else if (i.acao === 'login') {
-                tdValor.textContent = i.valorPreenchido || '';
-            } else {
-                tdValor.textContent = '';
-            }
-            tr.appendChild(tdValor);
-
-            // Detalhes expansíveis
-            const tdDet = document.createElement('td');
-            const detBtn = document.createElement('button');
-            detBtn.innerHTML = '<span aria-hidden="true">🔎</span>';
-            detBtn.title = 'Ver detalhes';
-            detBtn.style.background = 'none';
-            detBtn.style.border = 'none';
-            detBtn.style.cursor = 'pointer';
-            detBtn.style.fontSize = '1.1em';
-            detBtn.setAttribute('aria-label', 'Ver detalhes');
-            detBtn.onclick = (e) => {
-                e.stopPropagation();
-                showLogDetailsModal(i);
-            };
-            tdDet.appendChild(detBtn);
-            tr.appendChild(tdDet);
-
-            // Ações rápidas
-            const tdAcoes = document.createElement('td');
-            tdAcoes.style.textAlign = 'center';
-            tdAcoes.appendChild(buildActionMenu(i, idx));
-            tr.appendChild(tdAcoes);
-
-            // Expansão por linha (teclado)
-            tr.onclick = () => showLogDetailsModal(i);
-            tr.onkeydown = (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    showLogDetailsModal(i);
-                    e.preventDefault();
-                }
-            };
-
-            tbody.appendChild(tr);
-        });
-    }
-
-    renderRows();
-    scrollContainer.appendChild(table);
-    tableWrap.appendChild(scrollContainer);
-    log.appendChild(tableWrap);
-
-    // Sempre rola para o final ao adicionar novo log
+    // Foco inicial e navegação por teclado
     setTimeout(() => {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight;
-    }, 0);
-
-    // Estilo responsivo e barra de rolagem horizontal fixa e customizada
-    if (!document.getElementById('gherkin-log-table-style')) {
-        const style = document.createElement('style');
-        style.id = 'gherkin-log-table-style';
-    style.innerHTML = `
-/* Container principal do painel de log */
-#gherkin-log {
-    display: flex !important;
-    flex-direction: column !important;
-    height: 100% !important;
-    min-height: 220px;
-    background: #f9f9f9;
-    padding: 0;
-    margin: 0;
-}
-#gherkin-log > div {
-    flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    min-height: 0;
-    background: #fff;
-}
-#gherkin-log .gherkin-log-table-scroll {
-    flex: 1 1 auto;
-    overflow-x: auto;
-    overflow-y: auto;
-    min-height: 0;
-    background: #fff;
-    /* Barra de rolagem sempre visível */
-    scrollbar-width: thin;
-    scrollbar-color: #007bff #f9f9f9;
-}
-#gherkin-log .gherkin-log-table-scroll::-webkit-scrollbar {
-    height: 12px;
-    background: #f9f9f9;
-}
-#gherkin-log .gherkin-log-table-scroll::-webkit-scrollbar-thumb {
-    background: #007bff;
-    border-radius: 6px;
-    min-width: 40px;
-}
-#gherkin-log .gherkin-log-table-scroll::-webkit-scrollbar-thumb:hover {
-    background: #005bb5;
-}
-#gherkin-log .gherkin-log-table-scroll::-webkit-scrollbar-corner {
-    background: #f9f9f9;
-}
-.gherkin-log-table th, .gherkin-log-table td {
-    padding: 6px 8px;
-    border-bottom: 1px solid #e0e6ed;
-    text-align: left;
-    background: #fff;
-    white-space: nowrap;
-    max-width: 340px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    height: 38px !important;
-    min-height: 38px !important;
-    line-height: 38px !important;
-    vertical-align: middle !important;
-}
-.gherkin-log-table th {
-    background: #f7faff;
-    position: sticky;
-    top: 0;
-    z-index: 1;
-}
-.gherkin-log-table tr:focus {
-    outline: 2px solid #1976d2;
-    outline-offset: 1px;
-}
-.gherkin-log-table {
-    width: 100%;
-    min-width: 700px;
-    background: #fff;
-    /* height removido para evitar esticar a linha única */
-}
-@media (max-width: 900px) {
-    .gherkin-log-table th, .gherkin-log-table td { font-size: 12px; }
-    .gherkin-log-table { min-width: 520px; }
-}
-@media (max-width: 700px) {
-    .gherkin-log-table th, .gherkin-log-table td { font-size: 11px; }
-    .gherkin-log-table { min-width: 400px; }
-}
-`;
-        document.head.appendChild(style);
-    }
-
-    // Adiciona eventos para os botões "Limpar" e "Pausar"
-    setTimeout(() => {
-        // Botão Limpar
-        const clearBtn = document.getElementById('gherkin-clear');
-        if (clearBtn) {
-            clearBtn.disabled = false;
-            clearBtn.style.opacity = '';
-            clearBtn.onclick = () => {
-                showModal('Deseja realmente limpar todas as interações deste cenário?', () => {
-                    if (window.interactions) window.interactions.length = 0;
-                    if (typeof saveInteractionsToStorage === 'function') saveInteractionsToStorage();
-                    renderLogWithActions();
-                });
-            };
-        }
-        // Botão Pausar
-        const pauseBtn = document.getElementById('gherkin-pause');
-        if (pauseBtn) {
-            pauseBtn.disabled = false;
-            pauseBtn.style.opacity = '';
-            pauseBtn.onclick = () => {
-                window.isPaused = !window.isPaused;
-                if (window.isPaused) {
-                    pauseBtn.textContent = 'Continuar';
-                    pauseBtn.style.backgroundColor = '#28a745';
-                    const status = document.getElementById('gherkin-status');
-                    if (status) status.textContent = 'Status: Pausado';
-                    if (typeof stopTimer === 'function') stopTimer();
+        const focusables = modalBg.querySelectorAll('button, [tabindex="0"]');
+        if (focusables.length) focusables[0].focus();
+        modalBg.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                const focusable = Array.from(focusables);
+                let idx = focusable.indexOf(document.activeElement);
+                if (e.shiftKey) {
+                    idx = idx <= 0 ? focusable.length - 1 : idx - 1;
                 } else {
-                    pauseBtn.textContent = 'Pausar';
-                    pauseBtn.style.backgroundColor = '#ffc107';
-                    const status = document.getElementById('gherkin-status');
-                    if (status) status.textContent = 'Status: Gravando';
-                    if (typeof startTimer === 'function') startTimer();
+                    idx = idx === focusable.length - 1 ? 0 : idx + 1;
                 }
-            };
-        }
-
-        // Botão Exportar (barra inferior)
-        const exportBtn = document.getElementById('gherkin-export');
-        if (exportBtn) {
-            exportBtn.onclick = (e) => {
-                e.stopPropagation();
-                // Menu de formatos
-                const menu = document.createElement('div');
-                menu.style.position = 'absolute';
-                menu.style.background = '#fff';
-                menu.style.border = '1px solid #ccc';
-                menu.style.borderRadius = '5px';
-                menu.style.boxShadow = '0 2px 8px rgba(0,0,0,0.12)';
-                menu.style.zIndex = '10010';
-                // Calcula posição relativa ao botão
-                const rect = exportBtn.getBoundingClientRect();
-                menu.style.top = `${rect.bottom + window.scrollY + 4}px`;
-                menu.style.left = `${rect.left + window.scrollX}px`;
-                menu.style.minWidth = '120px';
-                menu.innerHTML = `
-                    <button style="width:100%;border:none;background:none;padding:8px;cursor:pointer;text-align:left;" tabindex="0">CSV</button>
-                    <button style="width:100%;border:none;background:none;padding:8px;cursor:pointer;text-align:left;" tabindex="0">Markdown</button>
-                    <button style="width:100%;border:none;background:none;padding:8px;cursor:pointer;text-align:left;" tabindex="0">JSON</button>
-                `;
-                menu.children[0].onclick = () => { exportLog('csv'); menu.remove(); };
-                menu.children[1].onclick = () => { exportLog('md'); menu.remove(); };
-                menu.children[2].onclick = () => { exportLog('json'); menu.remove(); };
-                document.body.appendChild(menu);
-                // Fecha ao clicar fora
-                setTimeout(() => {
-                    document.addEventListener('click', function closeMenu(ev) {
-                        if (!menu.contains(ev.target) && ev.target !== exportBtn) {
-                            menu.remove();
-                            document.removeEventListener('click', closeMenu);
-                        }
-                    });
-                }, 0);
-            };
-        }
-    }, 0);
+                focusable[idx].focus();
+                e.preventDefault();
+            } else if (e.key === 'Escape') {
+                modalBg.remove();
+            } else if ((e.key === 'Enter' || e.key === ' ') && document.activeElement.tagName === 'BUTTON') {
+                document.activeElement.click();
+            }
+        });
+    }, 50);
 }
 
-// Modal de detalhes do log
+// Exibe detalhes de uma interação em um modal, incluindo contexto Shadow DOM/Iframe
 function showLogDetailsModal(interaction) {
-    // ...reaproveite o padrão dos outros modais...
     const oldModal = document.getElementById('gherkin-modal');
     if (oldModal) oldModal.remove();
     const modalBg = document.createElement('div');
     modalBg.id = 'gherkin-modal';
-    modalBg.style.position = 'fixed';
-    modalBg.style.top = '0';
-    modalBg.style.left = '0';
-    modalBg.style.width = '100vw';
-    modalBg.style.height = '100vh';
-    modalBg.style.background = 'rgba(0,0,0,0.25)';
-    modalBg.style.display = 'flex';
-    modalBg.style.alignItems = 'center';
-    modalBg.style.justifyContent = 'center';
-    modalBg.style.zIndex = '10003';
-
-    const modal = document.createElement('div');
-    modal.style.background = '#fff';
-    modal.style.padding = '28px 32px 22px 32px';
-    modal.style.borderRadius = '12px';
-    modal.style.boxShadow = '0 4px 24px rgba(0,0,0,0.18)';
-    modal.style.display = 'flex';
-    modal.style.flexDirection = 'column';
-    modal.style.alignItems = 'flex-start';
-    modal.style.gap = '12px';
-    modal.style.minWidth = '320px';
-    modal.style.maxWidth = '96vw';
-    modal.style.maxHeight = '80vh';
-    modal.style.overflowY = 'auto';
     modalBg.className = 'gherkin-modal-bg';
+    modalBg.setAttribute('role', 'dialog');
+    modalBg.setAttribute('aria-modal', 'true');
+    modalBg.setAttribute('aria-label', 'Detalhes da Interação');
+    modalBg.tabIndex = -1;
+    modalBg.style.zIndex = '2147483647';
+    const modal = document.createElement('div');
     modal.className = 'gherkin-modal-content';
-
-    const meta = ACTION_META[interaction.acao] || {};
+    modal.setAttribute('role', 'document');
+    modal.style.minWidth = '340px';
+    modal.style.maxWidth = '96vw';
+    modal.style.padding = '28px 32px 22px 32px';
+    modal.style.position = 'relative';
     const title = document.createElement('div');
-    title.innerHTML = `<span style="font-size:1.3em;color:${meta.color || '#222'}">${meta.icon || ''}</span> <b>${meta.label || interaction.acao}</b> (${interaction.step})`;
-    title.style.fontSize = '17px';
+    title.textContent = 'Detalhes da Interação';
+    title.style.fontSize = '18px';
+    title.style.fontWeight = 'bold';
     title.style.color = '#0D47A1';
-    title.style.textAlign = 'left';
+    title.style.marginBottom = '10px';
+    title.id = 'gherkin-modal-details-title';
+    modal.setAttribute('aria-labelledby', 'gherkin-modal-details-title');
     modal.appendChild(title);
+    // Tabela de detalhes
+    const table = document.createElement('table');
+    table.style.width = '100%';
+    table.style.fontSize = '1rem';
+    table.style.marginBottom = '10px';
+    table.innerHTML = `
+        <tr><td style='font-weight:bold;'>Ação:</td><td>${(window.ACTION_META && window.ACTION_META[interaction.acao]?.label) || interaction.acao || ''}</td></tr>
+        <tr><td style='font-weight:bold;'>Elemento:</td><td>${interaction.nomeElemento || ''}</td></tr>
+        <tr><td style='font-weight:bold;'>Valor:</td><td>${interaction.valorPreenchido || interaction.nomeArquivo || ''}</td></tr>
+        <tr><td style='font-weight:bold;'>CSS Selector:</td><td><code>${typeof interaction.cssSelector === 'object' ? interaction.cssSelector?.css : interaction.cssSelector || ''}</code></td></tr>
+        <tr><td style='font-weight:bold;'>XPath:</td><td><code>${typeof interaction.xpath === 'object' ? interaction.xpath?.xpath : interaction.xpath || ''}</code></td></tr>
+    `;
+    modal.appendChild(table);
 
-
-    // --- NOVO: Exibe campo de índice SEMPRE ao lado do seletor CSS/XPath ---
-    // Extrai objetos completos
-    const cssSelectorObj = interaction.cssSelector && typeof interaction.cssSelector === 'object' ? interaction.cssSelector : null;
-    const xpathObj = interaction.xpath && typeof interaction.xpath === 'object' ? interaction.xpath : null;
-    // Ocorrências e índice
-    const ocorrenciasCss = (cssSelectorObj && cssSelectorObj.ocorrencias) ? cssSelectorObj.ocorrencias : 1;
-    const indiceCss = (cssSelectorObj && cssSelectorObj.indice) ? cssSelectorObj.indice : 1;
-    const ocorrenciasXpath = (xpathObj && xpathObj.ocorrencias) ? xpathObj.ocorrencias : 1;
-    const indiceXpath = (xpathObj && xpathObj.indice) ? xpathObj.indice : 1;
-
-    // Nome do elemento
-    if (interaction.nomeElemento) {
-        const row = document.createElement('div');
-        row.innerHTML = `<b>Nome do elemento:</b> <span style="font-family:monospace">${interaction.nomeElemento}</span>`;
-        modal.appendChild(row);
+    // Indicação de contexto Shadow DOM/Iframe
+    if (interaction.containerType === 'iframe' || interaction.containerType === 'shadow') {
+        const ctxDiv = document.createElement('div');
+        ctxDiv.style.background = interaction.containerType === 'iframe' ? '#e3f2fd' : '#fffde7';
+        ctxDiv.style.color = interaction.containerType === 'iframe' ? '#1565c0' : '#bfa100';
+        ctxDiv.style.padding = '10px 14px';
+        ctxDiv.style.borderRadius = '7px';
+        ctxDiv.style.marginBottom = '10px';
+        ctxDiv.style.fontWeight = 'bold';
+        ctxDiv.style.display = 'flex';
+        ctxDiv.style.alignItems = 'center';
+        ctxDiv.style.gap = '10px';
+        ctxDiv.innerHTML = `
+            <span style="font-size:1.3em;">${interaction.containerType === 'iframe' ? '🖼️' : '🌑'}</span>
+            <span>
+                ${interaction.containerType === 'iframe' ? 'Elemento dentro de <b>iframe</b>' : 'Elemento dentro de <b>Shadow DOM</b>'}
+                ${interaction.containerElementName ? `<br><span style='font-weight:normal;'>Container: <code>${interaction.containerElementName}</code></span>` : ''}
+                ${interaction.containerXpath ? `<br><span style='font-weight:normal;'>XPath do container: <code>${typeof interaction.containerXpath === 'object' ? interaction.containerXpath?.xpath : interaction.containerXpath}</code></span>` : ''}
+            </span>
+        `;
+        modal.appendChild(ctxDiv);
     }
-    // Valor preenchido
-    if (interaction.valorPreenchido || interaction.nomeArquivo) {
-        const row = document.createElement('div');
-        row.innerHTML = `<b>Valor preenchido:</b> <span style="font-family:monospace">${interaction.valorPreenchido || interaction.nomeArquivo}</span>`;
-        modal.appendChild(row);
-    }
-
-    // --- Campo de seletor CSS com índice ---
-    const cssRow = document.createElement('div');
-    cssRow.style.display = 'flex';
-    cssRow.style.alignItems = 'center';
-    cssRow.style.gap = '8px';
-    cssRow.style.marginBottom = '2px';
-    const cssLabel = document.createElement('b');
-    cssLabel.textContent = 'Selector CSS:';
-    cssRow.appendChild(cssLabel);
-    const cssValue = document.createElement('span');
-    cssValue.style.fontFamily = 'monospace';
-    cssValue.textContent = (cssSelectorObj && cssSelectorObj.css) ? cssSelectorObj.css : (interaction.cssSelector || '');
-    cssRow.appendChild(cssValue);
-    // Campo de índice
-    const cssInput = document.createElement('input');
-    cssInput.type = 'number';
-    cssInput.min = '1';
-    cssInput.max = ocorrenciasCss;
-    cssInput.value = indiceCss;
-    cssInput.style.width = '56px';
-    cssInput.style.marginLeft = '6px';
-    cssInput.style.fontSize = '13px';
-    cssInput.title = `Índice da ocorrência do seletor CSS (1 a ${ocorrenciasCss})`;
-    cssRow.appendChild(document.createTextNode(' (índice: '));
-    cssRow.appendChild(cssInput);
-    cssRow.appendChild(document.createTextNode(` / ${ocorrenciasCss})`));
-    modal.appendChild(cssRow);
-
-    // --- Campo de seletor XPath com índice ---
-    const xpathRow = document.createElement('div');
-    xpathRow.style.display = 'flex';
-    xpathRow.style.alignItems = 'center';
-    xpathRow.style.gap = '8px';
-    xpathRow.style.marginBottom = '2px';
-    const xpathLabel = document.createElement('b');
-    xpathLabel.textContent = 'XPath:';
-    xpathRow.appendChild(xpathLabel);
-    const xpathValue = document.createElement('span');
-    xpathValue.style.fontFamily = 'monospace';
-    xpathValue.textContent = (xpathObj && xpathObj.xpath) ? xpathObj.xpath : (interaction.xpath || '');
-    xpathRow.appendChild(xpathValue);
-    // Campo de índice
-    const xpathInput = document.createElement('input');
-    xpathInput.type = 'number';
-    xpathInput.min = '1';
-    xpathInput.max = ocorrenciasXpath;
-    xpathInput.value = indiceXpath;
-    xpathInput.style.width = '56px';
-    xpathInput.style.marginLeft = '6px';
-    xpathInput.style.fontSize = '13px';
-    xpathInput.title = `Índice da ocorrência do XPath (1 a ${ocorrenciasXpath})`;
-    xpathRow.appendChild(document.createTextNode(' (índice: '));
-    xpathRow.appendChild(xpathInput);
-    xpathRow.appendChild(document.createTextNode(` / ${ocorrenciasXpath})`));
-    modal.appendChild(xpathRow);
 
     // Timestamp
     if (interaction.timestamp) {
-        const row = document.createElement('div');
-        row.innerHTML = `<b>Timestamp:</b> <span style="font-family:monospace">${new Date(interaction.timestamp).toLocaleString()}</span>`;
-        modal.appendChild(row);
+        const ts = document.createElement('div');
+        const date = new Date(interaction.timestamp);
+        ts.textContent = 'Registrado em: ' + date.toLocaleString();
+        ts.style.fontSize = '0.97em';
+        ts.style.color = '#888';
+        ts.style.marginBottom = '8px';
+        modal.appendChild(ts);
     }
-    // Texto do passo
-    if (interaction.stepText) {
-        const row = document.createElement('div');
-        row.innerHTML = `<b>Texto do passo:</b> <span style="font-family:monospace">${interaction.stepText}</span>`;
-        modal.appendChild(row);
-    }
-
-    // --- Atualiza seletor salvo ao mudar índice ---
-    cssInput.addEventListener('change', function() {
-        let idx = parseInt(cssInput.value, 10);
-        if (!idx || idx < 1) idx = 1;
-        if (idx > ocorrenciasCss) idx = ocorrenciasCss;
-        cssInput.value = idx;
-        if (cssSelectorObj && cssSelectorObj.css) {
-            let baseCss = cssSelectorObj.css.replace(/:nth-of-type\(\d+\)/, '');
-            if (idx > 1) baseCss += `:nth-of-type(${idx})`;
-            interaction.cssSelector = {
-                ...cssSelectorObj,
-                css: baseCss,
-                indice: idx
-            };
-        }
-        saveInteractionsToStorage && saveInteractionsToStorage();
-        renderLogWithActions && renderLogWithActions();
-        cssValue.textContent = (interaction.cssSelector && interaction.cssSelector.css) ? interaction.cssSelector.css : (interaction.cssSelector || '');
-    });
-    xpathInput.addEventListener('change', function() {
-        let idx = parseInt(xpathInput.value, 10);
-        if (!idx || idx < 1) idx = 1;
-        if (idx > ocorrenciasXpath) idx = ocorrenciasXpath;
-        xpathInput.value = idx;
-        if (xpathObj && xpathObj.xpath) {
-            let baseXpath = xpathObj.xpath.replace(/\[\d+\]$/, '');
-            if (idx > 1) baseXpath += `[${idx}]`;
-            interaction.xpath = {
-                ...xpathObj,
-                xpath: baseXpath,
-                indice: idx
-            };
-        }
-        saveInteractionsToStorage && saveInteractionsToStorage();
-        renderLogWithActions && renderLogWithActions();
-        xpathValue.textContent = (interaction.xpath && interaction.xpath.xpath) ? interaction.xpath.xpath : (interaction.xpath || '');
-    });
 
     // Botão fechar
     const closeBtn = document.createElement('button');
     closeBtn.textContent = 'Fechar';
-    closeBtn.style.background = '#007bff';
-    closeBtn.style.color = '#fff';
-    closeBtn.style.border = 'none';
-    closeBtn.style.borderRadius = '6px';
-    closeBtn.style.padding = '8px 22px';
-    closeBtn.style.fontSize = '15px';
-    closeBtn.style.fontWeight = 'bold';
-    closeBtn.style.cursor = 'pointer';
-    closeBtn.onclick = () => modalBg.remove();
-    modal.appendChild(closeBtn);
-
-    modalBg.appendChild(modal);
-    document.body.appendChild(modalBg);
-}
-
-// Modal para editar interação
-function showEditModal(idx) {
-    const interaction = window.interactions[idx];
-    if (!interaction) return;
-    // Remove modal antigo se existir
-    const oldModal = document.getElementById('gherkin-modal');
-    if (oldModal) oldModal.remove();
-    const modalBg = document.createElement('div');
-    modalBg.id = 'gherkin-modal';
-    modalBg.style.position = 'fixed';
-    modalBg.style.top = '0';
-    modalBg.style.left = '0';
-    modalBg.style.width = '100vw';
-    modalBg.style.height = '100vh';
-    modalBg.style.background = 'rgba(0,0,0,0.25)';
-    modalBg.style.display = 'flex';
-    modalBg.style.alignItems = 'center';
-    modalBg.style.justifyContent = 'center';
-    modalBg.style.zIndex = '10003';
-    const modal = document.createElement('div');
-    modal.style.background = '#fff';
-    modal.style.padding = '28px 32px 22px 32px';
-    modal.style.borderRadius = '12px';
-    modal.style.boxShadow = '0 4px 24px rgba(0,0,0,0.18)';
-    modal.style.display = 'flex';
-    modal.style.flexDirection = 'column';
-    modal.style.alignItems = 'center';
-    modal.style.gap = '18px';
-    modal.style.minWidth = '260px';
-    // Título
-    const title = document.createElement('div');
-    title.textContent = 'Editar interação';
-    title.style.fontSize = '17px';
-    title.style.color = '#0D47A1';
-    title.style.textAlign = 'center';
-    modal.appendChild(title);
-    // Campo passo (Given, When, Then)
-    const stepLabel = document.createElement('label');
-    stepLabel.textContent = 'Passo BDD:';
-    stepLabel.style.fontWeight = 'bold';
-    stepLabel.style.marginBottom = '4px';
-    modal.appendChild(stepLabel);
-    const stepSelect = document.createElement('select');
-    stepSelect.style.width = '100%';
-    stepSelect.style.padding = '7px';
-    stepSelect.style.borderRadius = '5px';
-    stepSelect.style.border = '1px solid #ccc';
-    stepSelect.style.fontSize = '14px';
-    ['Given','When','Then'].forEach(opt => {
-        const option = document.createElement('option');
-        option.value = opt;
-        option.textContent = opt;
-        if (interaction.step === opt) option.selected = true;
-        stepSelect.appendChild(option);
-    });
-    modal.appendChild(stepSelect);
-    // Campo ação
-    const actionLabel = document.createElement('label');
-    actionLabel.textContent = 'Ação:';
-    actionLabel.style.fontWeight = 'bold';
-    actionLabel.style.marginBottom = '4px';
-    modal.appendChild(actionLabel);
-    let actionSelect;
-    if (interaction.acao === 'acessa_url') {
-        // Para o passo inicial, exibe o valor fixo e desabilita edição
-        actionSelect = document.createElement('input');
-        actionSelect.type = 'text';
-        actionSelect.value = 'acessa_url';
-        actionSelect.disabled = true;
-        actionSelect.style.width = '100%';
-        actionSelect.style.padding = '7px';
-        actionSelect.style.borderRadius = '5px';
-        actionSelect.style.border = '1px solid #ccc';
-        actionSelect.style.fontSize = '14px';
-        actionSelect.style.background = '#f5f5f5';
-    } else {
-        actionSelect = document.createElement('select');
-        actionSelect.style.width = '100%';
-        actionSelect.style.padding = '7px';
-        actionSelect.style.borderRadius = '5px';
-        actionSelect.style.border = '1px solid #ccc';
-        actionSelect.style.fontSize = '14px';
-        // Opções iguais ao painel
-        const mainActionSelect = document.getElementById('gherkin-action-select');
-        if (mainActionSelect && mainActionSelect.innerHTML.trim()) {
-            actionSelect.innerHTML = mainActionSelect.innerHTML;
-        } else {
-            actionSelect.innerHTML = '<option value="clica">Clicar</option>';
-        }
-        actionSelect.value = interaction.acao;
-    }
-    modal.appendChild(actionSelect);
-    // Campo nome do elemento ou URL esperada (para valida_url)
-    const nomeLabel = document.createElement('label');
-    if (interaction.acao === 'valida_url') {
-        nomeLabel.textContent = 'URL esperada:';
-    } else {
-        nomeLabel.textContent = 'Nome do elemento:';
-    }
-    nomeLabel.style.fontWeight = 'bold';
-    nomeLabel.style.marginBottom = '4px';
-    modal.appendChild(nomeLabel);
-    const nomeInput = document.createElement('input');
-    nomeInput.type = 'text';
-    if (interaction.acao === 'valida_url') {
-        nomeInput.value = interaction.urlEsperada || '';
-    } else {
-        nomeInput.value = interaction.nomeElemento;
-    }
-    nomeInput.style.width = '100%';
-    nomeInput.style.padding = '7px';
-    nomeInput.style.borderRadius = '5px';
-    nomeInput.style.border = '1px solid #ccc';
-    nomeInput.style.fontSize = '14px';
-    modal.appendChild(nomeInput);
-    // Campo nome do arquivo (apenas para upload)
-    let fileInput = null;
-    if (interaction.acao === 'upload') {
-        const fileLabel = document.createElement('label');
-        fileLabel.textContent = 'Nome do arquivo de exemplo:';
-        fileLabel.style.fontWeight = 'bold';
-        fileLabel.style.marginBottom = '4px';
-        modal.appendChild(fileLabel);
-        fileInput = document.createElement('input');
-        fileInput.type = 'text';
-        fileInput.value = interaction.nomeArquivo || '';
-        fileInput.style.width = '100%';
-        fileInput.style.padding = '7px';
-        fileInput.style.borderRadius = '5px';
-        fileInput.style.border = '1px solid #ccc';
-        fileInput.style.fontSize = '14px';
-        modal.appendChild(fileInput);
-    }
-    // Campo valor preenchido (apenas para ação preenche)
-    let valorPreenchidoInput = null;
-    if (interaction.acao === 'preenche') {
-        const valorLabel = document.createElement('label');
-        valorLabel.textContent = 'Valor preenchido:';
-        valorLabel.style.fontWeight = 'bold';
-        valorLabel.style.marginBottom = '4px';
-        modal.appendChild(valorLabel);
-        valorPreenchidoInput = document.createElement('input');
-        valorPreenchidoInput.type = 'text';
-        valorPreenchidoInput.value = typeof interaction.valorPreenchido !== 'undefined' ? interaction.valorPreenchido : '';
-        valorPreenchidoInput.style.width = '100%';
-        valorPreenchidoInput.style.padding = '7px';
-        valorPreenchidoInput.style.borderRadius = '5px';
-        valorPreenchidoInput.style.border = '1px solid #ccc';
-        valorPreenchidoInput.style.fontSize = '14px';
-        valorPreenchidoInput.style.marginBottom = '12px';
-        valorPreenchidoInput.autocomplete = 'off';
-        modal.appendChild(valorPreenchidoInput);
-    }
-
-    // --- NOVO: Seletor não único, exibe aviso e campo de escolha de ocorrência ---
-    // Suporta tanto CSS quanto XPath
-    let ocorrenciaInput = null;
-    let avisoDiv = null;
-    let cssSelectorObj = interaction.cssSelector && typeof interaction.cssSelector === 'object' ? interaction.cssSelector : null;
-    let xpathObj = interaction.xpath && typeof interaction.xpath === 'object' ? interaction.xpath : null;
-    let aviso = (cssSelectorObj && cssSelectorObj.aviso) || (xpathObj && xpathObj.aviso);
-    let ocorrencias = (cssSelectorObj && cssSelectorObj.ocorrencias) || (xpathObj && xpathObj.ocorrencias);
-    let indiceAtual = (cssSelectorObj && cssSelectorObj.indice) || (xpathObj && xpathObj.indice) || 1;
-    if (aviso && ocorrencias > 1) {
-        avisoDiv = document.createElement('div');
-        avisoDiv.textContent = aviso;
-        avisoDiv.style.background = '#fff3cd';
-        avisoDiv.style.color = '#856404';
-        avisoDiv.style.padding = '7px 10px';
-        avisoDiv.style.borderRadius = '5px';
-        avisoDiv.style.fontSize = '13px';
-        avisoDiv.style.marginBottom = '8px';
-        avisoDiv.style.border = '1px solid #ffeeba';
-        modal.appendChild(avisoDiv);
-        // Campo para escolher a ocorrência
-        const ocorrenciaLabel = document.createElement('label');
-        ocorrenciaLabel.textContent = `Escolha a ocorrência desejada (1 a ${ocorrencias}):`;
-        ocorrenciaLabel.style.fontWeight = 'bold';
-        ocorrenciaLabel.style.marginBottom = '4px';
-        modal.appendChild(ocorrenciaLabel);
-        ocorrenciaInput = document.createElement('input');
-        ocorrenciaInput.type = 'number';
-        ocorrenciaInput.min = '1';
-        ocorrenciaInput.max = ocorrencias;
-        ocorrenciaInput.value = indiceAtual;
-        ocorrenciaInput.style.width = '100%';
-        ocorrenciaInput.style.padding = '7px';
-        ocorrenciaInput.style.borderRadius = '5px';
-        ocorrenciaInput.style.border = '1px solid #ccc';
-        ocorrenciaInput.style.fontSize = '14px';
-        ocorrenciaInput.style.marginBottom = '12px';
-        ocorrenciaInput.autocomplete = 'off';
-        modal.appendChild(ocorrenciaInput);
-    }
-    // Botões
-    const btns = document.createElement('div');
-    btns.style.display = 'flex';
-    btns.style.gap = '18px';
-    btns.style.marginTop = '12px';
-    const saveBtn = document.createElement('button');
-    saveBtn.textContent = 'Salvar';
-    saveBtn.style.background = '#007bff';
-    saveBtn.style.color = '#fff';
-    saveBtn.style.border = 'none';
-    saveBtn.style.borderRadius = '6px';
-    saveBtn.style.padding = '8px 22px';
-    saveBtn.style.fontSize = '15px';
-    saveBtn.style.fontWeight = 'bold';
-    saveBtn.style.cursor = 'pointer';
-    saveBtn.onclick = () => {
-        interaction.step = stepSelect.value;
-        if (interaction.acao === 'acessa_url') {
-            // Mantém a ação fixa
-            interaction.acao = 'acessa_url';
-            interaction.acaoTexto = 'Acessa';
-        } else {
-            interaction.acao = actionSelect.value;
-            // Protege contra opção indefinida
-            const selectedOption = actionSelect.options ? actionSelect.options[actionSelect.selectedIndex] : null;
-            interaction.acaoTexto = selectedOption ? selectedOption.text : actionSelect.value;
-        }
-        if (interaction.acao === 'valida_url') {
-            interaction.urlEsperada = nomeInput.value.trim() || interaction.urlEsperada;
-        } else {
-            interaction.nomeElemento = nomeInput.value.trim() || interaction.nomeElemento;
-        }
-        if (interaction.acao === 'upload' && fileInput) {
-            interaction.nomeArquivo = fileInput.value.trim() || interaction.nomeArquivo;
-        }
-        if (interaction.acao === 'preenche' && valorPreenchidoInput) {
-            interaction.valorPreenchido = valorPreenchidoInput.value;
-        }
-        // --- NOVO: Atualiza o seletor com o índice escolhido, se aplicável ---
-        if (ocorrenciaInput && ocorrenciaInput.value) {
-            const idxEscolhido = parseInt(ocorrenciaInput.value, 10);
-            // Atualiza CSS
-            if (cssSelectorObj && cssSelectorObj.css) {
-                // Se já tem :nth-of-type, substitui, senão adiciona
-                let baseCss = cssSelectorObj.css.replace(/:nth-of-type\(\d+\)/, '');
-                if (idxEscolhido > 1) {
-                    baseCss += `:nth-of-type(${idxEscolhido})`;
-                }
-                interaction.cssSelector = {
-                    ...cssSelectorObj,
-                    css: baseCss,
-                    indice: idxEscolhido
-                };
-            }
-            // Atualiza XPath
-            if (xpathObj && xpathObj.xpath) {
-                let baseXpath = xpathObj.xpath.replace(/\[\d+\]$/, '');
-                if (idxEscolhido > 1) {
-                    baseXpath += `[${idxEscolhido}]`;
-                }
-                interaction.xpath = {
-                    ...xpathObj,
-                    xpath: baseXpath,
-                    indice: idxEscolhido
-                };
-            }
-        }
-        saveInteractionsToStorage();
-        renderLogWithActions();
-        modalBg.remove();
-    };
-    const cancelBtn = document.createElement('button');
-    cancelBtn.textContent = 'Cancelar';
-    cancelBtn.style.background = '#dc3545';
-    cancelBtn.style.color = '#fff';
-    cancelBtn.style.border = 'none';
-    cancelBtn.style.borderRadius = '6px';
-    cancelBtn.style.padding = '8px 22px';
-    cancelBtn.style.fontSize = '15px';
-    cancelBtn.style.fontWeight = 'bold';
-    cancelBtn.style.cursor = 'pointer';
-    cancelBtn.onclick = () => modalBg.remove();
-    btns.appendChild(saveBtn);
-    btns.appendChild(cancelBtn);
-    modal.appendChild(btns);
-    modalBg.appendChild(modal);
-    document.body.appendChild(modalBg);
-}
-
-// Modal para exibir XPath
-function showXPathModal(xpath) {
-    // Remove modal antigo se existir
-    const oldModal = document.getElementById('gherkin-modal');
-    if (oldModal) oldModal.remove();
-    const modalBg = document.createElement('div');
-    modalBg.id = 'gherkin-modal';
-    modalBg.style.position = 'fixed';
-    modalBg.style.top = '0';
-    modalBg.style.left = '0';
-    modalBg.style.width = '100vw';
-    modalBg.style.height = '100vh';
-    modalBg.style.background = 'rgba(0,0,0,0.25)';
-    modalBg.style.display = 'flex';
-    modalBg.style.alignItems = 'center';
-    modalBg.style.justifyContent = 'center';
-    modalBg.style.zIndex = '10003';
-    const modal = document.createElement('div');
-    modal.style.background = '#fff';
-    modal.style.padding = '28px 32px 22px 32px';
-    modal.style.borderRadius = '12px';
-    modal.style.boxShadow = '0 4px 24px rgba(0,0,0,0.18)';
-    modal.style.display = 'flex';
-    modal.style.flexDirection = 'column';
-    modal.style.alignItems = 'center';
-    modal.style.gap = '18px';
-    modal.style.minWidth = '260px';
-    // Título
-    const title = document.createElement('div');
-    title.textContent = 'XPath do elemento';
-    title.style.fontSize = '17px';
-    title.style.color = '#0D47A1';
-    title.style.textAlign = 'center';
-    modal.appendChild(title);
-    // XPath
-    const xpathBox = document.createElement('textarea');
-    xpathBox.value = xpath || '';
-    xpathBox.readOnly = true;
-    xpathBox.style.width = '100%';
-    xpathBox.style.height = '60px';
-    xpathBox.style.fontSize = '13px';
-    xpathBox.style.padding = '7px';
-    xpathBox.style.borderRadius = '5px';
-    xpathBox.style.border = '1px solid #ccc';
-    xpathBox.style.marginTop = '8px';
-    modal.appendChild(xpathBox);
-    // Botão fechar
-    const closeBtn = document.createElement('button');
-    closeBtn.textContent = 'Fechar';
-    closeBtn.style.background = '#007bff';
-    closeBtn.style.color = '#fff';
-    closeBtn.style.border = 'none';
-    closeBtn.style.borderRadius = '6px';
-    closeBtn.style.padding = '8px 22px';
-    closeBtn.style.fontSize = '15px';
-    closeBtn.style.fontWeight = 'bold';
-    closeBtn.style.cursor = 'pointer';
+    closeBtn.className = 'gherkin-btn gherkin-btn-danger';
+    closeBtn.setAttribute('aria-label', 'Fechar detalhes da interação');
+    closeBtn.tabIndex = 0;
+    closeBtn.style.marginTop = '10px';
     closeBtn.onclick = () => modalBg.remove();
     modal.appendChild(closeBtn);
     modalBg.appendChild(modal);
     document.body.appendChild(modalBg);
-}
-
-// Menu de ações rápidas (melhorado)
-function buildActionMenu(interaction, idx) {
-    const menuWrap = document.createElement('div');
-    menuWrap.style.position = 'relative';
-    menuWrap.style.display = 'inline-block';
-
-    const btn = document.createElement('button');
-    // Ícone SVG de "três pontos" vertical, acessível e responsivo
-    btn.innerHTML = `
-      <span class="gherkin-action-menu-icon" aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-          <circle cx="12" cy="5" r="2" fill="#0070f3"/>
-          <circle cx="12" cy="12" r="2" fill="#0070f3"/>
-          <circle cx="12" cy="19" r="2" fill="#0070f3"/>
-        </svg>
-      </span>
-      <span class="sr-only">Ações rápidas</span>
-    `;
-    btn.title = 'Ações';
-    btn.style.background = 'none';
-    btn.style.border = 'none';
-    btn.style.cursor = 'pointer';
-    btn.style.fontSize = '1.2em';
-    btn.setAttribute('aria-label', 'Ações rápidas');
-    btn.setAttribute('tabindex', '0');
-    btn.style.display = 'inline-flex';
-    btn.style.alignItems = 'center';
-    btn.style.justifyContent = 'center';
-    btn.style.minWidth = '36px';
-    btn.style.minHeight = '36px';
-    btn.style.borderRadius = '50%';
-    btn.style.transition = 'background 0.18s';
-    btn.onkeydown = (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        btn.click();
-      }
-    };
-    menuWrap.appendChild(btn);
-
-    const menu = document.createElement('div');
-    menu.className = 'gherkin-action-dropdown';
-    menu.style.display = 'none';
-    menu.style.position = 'absolute';
-    menu.style.background = '#fff';
-    menu.style.border = '1px solid #ccc';
-    menu.style.borderRadius = '6px';
-    menu.style.boxShadow = '0 8px 32px rgba(0,112,243,0.13), 0 1.5px 6px rgba(0,0,0,0.07)';
-    menu.style.zIndex = '2147483647';
-    menu.style.minWidth = '170px';
-    menu.style.maxWidth = '90vw';
-    menu.style.maxHeight = '320px';
-    menu.style.overflowY = 'auto';
-    menu.style.padding = '8px 0';
-    // Não defina left/top aqui, será calculado no click
-
-    // Editar
-    const editBtn = document.createElement('button');
-    editBtn.textContent = 'Editar';
-    editBtn.onclick = (e) => {
-        e.stopPropagation();
-        menu.style.display = 'none';
-        showEditModal(idx);
-    };
-    menu.appendChild(editBtn);
-
-    // Ver XPath
-    const xpathBtn = document.createElement('button');
-    xpathBtn.textContent = 'Ver XPath';
-    xpathBtn.onclick = (e) => {
-        e.stopPropagation();
-        menu.style.display = 'none';
-        showXPathModal(interaction.xpath);
-    };
-    menu.appendChild(xpathBtn);
-
-    // Excluir
-    const deleteBtn = document.createElement('button');
-    deleteBtn.textContent = 'Excluir';
-    deleteBtn.style.color = '#dc3545';
-    deleteBtn.onclick = (e) => {
-        e.stopPropagation();
-        menu.style.display = 'none';
-        showModal('Tem certeza que deseja excluir esta ação?', () => {
-            window.interactions.splice(idx, 1);
-            if (typeof saveInteractionsToStorage === 'function') saveInteractionsToStorage();
-            renderLogWithActions();
-        });
-    };
-    menu.appendChild(deleteBtn);
-
-    // Exemplo Selenium (se aplicável)
-    if (['login', 'espera_elemento', 'espera_nao_existe', 'upload'].includes(interaction.acao)) {
-        const seleniumBtn = document.createElement('button');
-        seleniumBtn.textContent = 'Ver exemplo Selenium';
-        seleniumBtn.onclick = (e) => {
-            e.stopPropagation();
-            menu.style.display = 'none';
-            showSeleniumExampleModal(interaction);
-        };
-        menu.appendChild(seleniumBtn);
-    }
-
-    btn.onclick = (e) => {
-        e.stopPropagation();
-        // Fecha outros menus
-        document.querySelectorAll('.gherkin-action-dropdown').forEach(d => { d.style.display = 'none'; if (d.parentElement === document.body) d.remove(); });
-
-        // Exibe o menu como dropdown centralizado abaixo do botão, DENTRO do gherkin-log
-        menu.style.display = 'flex';
-        menu.style.position = 'absolute';
-        menu.style.visibility = 'hidden';
-        menu.style.left = '0';
-        menu.style.top = '0';
-        // Garante que o gherkin-log tem position: relative
-        const log = document.getElementById('gherkin-log');
-        if (log) {
-            if (getComputedStyle(log).position === 'static') {
-                log.style.position = 'relative';
-            }
-            log.appendChild(menu);
-        } else {
-            document.body.appendChild(menu);
-        }
-
-        // Mede o botão e o menu
-        const btnRect = btn.getBoundingClientRect();
-        const menuRect = menu.getBoundingClientRect();
-        const logRect = log ? log.getBoundingClientRect() : { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
-        menu.style.visibility = '';
-
-        // Posição padrão: abaixo do botão, relativa ao gherkin-log
-        let left = btnRect.left - logRect.left + (btnRect.width / 2) - (menuRect.width / 2);
-        let top = btnRect.bottom - logRect.top + 4;
-
-        // Garante que não saia do log
-        if (left < 0) left = 0;
-        if (left + menuRect.width > logRect.right - logRect.left) left = logRect.right - logRect.left - menuRect.width - 2;
-        if (top + menuRect.height > logRect.bottom - logRect.top) {
-            // Exibe para cima do botão
-            top = btnRect.top - logRect.top - menuRect.height - 4;
-            if (top < 0) top = 0;
-        }
-
-        menu.style.left = left + 'px';
-        menu.style.top = top + 'px';
-
-        // Garante foco para acessibilidade
-        setTimeout(() => {
-            if (menu.firstChild && menu.firstChild.focus) menu.firstChild.focus();
-        }, 0);
-
-        // Fecha ao clicar fora
-        setTimeout(() => {
-            function closeDropdown(ev) {
-                if (!menu.contains(ev.target) && ev.target !== btn) {
-                    menu.style.display = 'none';
-                    if (menu.parentElement === document.body) menu.remove();
-                    document.removeEventListener('click', closeDropdown);
-                }
-            }
-            document.addEventListener('click', closeDropdown);
-        }, 0);
-    };
-
-    // Fecha ao clicar fora
+    // Foco inicial e navegação por teclado
     setTimeout(() => {
-        document.addEventListener('click', function closeDropdown(ev) {
-            if (!menu.contains(ev.target) && ev.target !== btn) {
-                menu.style.display = 'none';
-                document.removeEventListener('click', closeDropdown);
+        const focusables = modalBg.querySelectorAll('button, [tabindex="0"]');
+        if (focusables.length) focusables[0].focus();
+        modalBg.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                const focusable = Array.from(focusables);
+                let idx = focusable.indexOf(document.activeElement);
+                if (e.shiftKey) {
+                    idx = idx <= 0 ? focusable.length - 1 : idx - 1;
+                } else {
+                    idx = idx === focusable.length - 1 ? 0 : idx + 1;
+                }
+                focusable[idx].focus();
+                e.preventDefault();
+            } else if (e.key === 'Escape') {
+                modalBg.remove();
+            } else if ((e.key === 'Enter' || e.key === ' ') && document.activeElement.tagName === 'BUTTON') {
+                document.activeElement.click();
             }
         });
-    }, 0);
-
-    menuWrap.appendChild(menu);
-    return menuWrap;
+    }, 50);
 }
 
-function showSeleniumExampleModal(interaction) {
-    // Remove modal antigo se existir
-    const oldModal = document.getElementById('gherkin-modal');
-    if (oldModal) oldModal.remove();
-    const modalBg = document.createElement('div');
-    modalBg.id = 'gherkin-modal';
-    modalBg.style.position = 'fixed';
-    modalBg.style.top = '0';
-    modalBg.style.left = '0';
-    modalBg.style.width = '100vw';
-    modalBg.style.height = '100vh';
-    modalBg.style.background = 'rgba(0,0,0,0.25)';
-    modalBg.style.display = 'flex';
-    modalBg.style.alignItems = 'center';
-    modalBg.style.justifyContent = 'center';
-    modalBg.style.zIndex = '10003';
-
-    const modal = document.createElement('div');
-    modal.style.background = '#fff';
-    modal.style.padding = '28px 32px 22px 32px';
-    modal.style.borderRadius = '12px';
-    modal.style.boxShadow = '0 4px 24px rgba(0,0,0,0.18)';
-    modal.style.display = 'flex';
-    modal.style.flexDirection = 'column';
-    modal.style.alignItems = 'flex-start';
-    modal.style.gap = '12px';
-    modal.style.minWidth = '320px';
-    modal.style.maxWidth = '96vw';
-    modal.style.maxHeight = '80vh';
-    modal.style.overflowY = 'auto';
-    modalBg.className = 'gherkin-modal-bg';
-    modal.className = 'gherkin-modal-content';
-
-    // Exemplo Selenium (ajuste conforme o tipo de interação)
-    let seleniumExample = '';
-    if (interaction.acao === 'login') {
-        seleniumExample = `
-driver.find_element(By.CSS_SELECTOR, "${interaction.cssSelector}").send_keys("${interaction.nomeElemento}");
-driver.find_element(By.CSS_SELECTOR, "${interaction.cssSelectorSenha}").send_keys("${interaction.valorPreenchido}");
-driver.find_element(By.CSS_SELECTOR, "${interaction.cssSelectorBotaoLogin}").click();
-        `.trim();
-    } else if (interaction.acao === 'espera_elemento') {
-        seleniumExample = `
-WebDriverWait(driver, 10).until(
-    EC.presence_of_element_located((By.CSS_SELECTOR, "${interaction.cssSelector}"))
-)
-        `.trim();
-    } else if (interaction.acao === 'upload') {
-        seleniumExample = `
-driver.find_element(By.CSS_SELECTOR, "${interaction.cssSelector}").send_keys("/caminho/para/${interaction.nomeArquivo}");
-        `.trim();
-    } else {
-        seleniumExample = '# Exemplo Selenium não disponível para esta ação.';
-    }
-
-    const title = document.createElement('div');
-    title.innerHTML = `<b>Exemplo Selenium</b> (${interaction.acao})`;
-    title.style.fontSize = '17px';
-    title.style.color = '#0D47A1';
-    title.style.textAlign = 'left';
-    modal.appendChild(title);
-
-    const code = document.createElement('pre');
-    code.textContent = seleniumExample;
-    code.style.background = '#f7faff';
-    code.style.padding = '12px';
-    code.style.borderRadius = '6px';
-    code.style.fontSize = '14px';
-    code.style.overflowX = 'auto';
-    modal.appendChild(code);
-
-    const closeBtn = document.createElement('button');
-    closeBtn.textContent = 'Fechar';
-    closeBtn.style.background = '#007bff';
-    closeBtn.style.color = '#fff';
-    closeBtn.style.border = 'none';
-    closeBtn.style.borderRadius = '6px';
-    closeBtn.style.padding = '8px 22px';
-    closeBtn.style.fontSize = '15px';
-    closeBtn.style.fontWeight = 'bold';
-    closeBtn.style.cursor = 'pointer';
-    closeBtn.onclick = () => modalBg.remove();
-    modal.appendChild(closeBtn);
-
-    modalBg.appendChild(modal);
-    document.body.appendChild(modalBg);
-}
-
-function initializePanelEvents(panel) {
-    // Botão de destaque visual (hover)
-    const highlightBtn = panel.querySelector('#gherkin-highlight-toggle');
-    const highlightIcon = panel.querySelector('#gherkin-highlight-icon svg');
-    if (highlightBtn) {
-        // Estado global para saber se está ativo
-        if (typeof window.__gherkinHighlightActive === 'undefined') window.__gherkinHighlightActive = false;
-        function updateHighlightBtn() {
-            if (window.__gherkinHighlightActive) {
-                highlightBtn.style.background = '#eaf6ff';
-                highlightBtn.style.borderRadius = '6px';
-                highlightBtn.title = 'Desativar seleção de elemento na página';
-                if (highlightIcon) highlightIcon.setAttribute('fill', '#0070f3');
-            } else {
-                highlightBtn.style.background = 'none';
-                highlightBtn.title = 'Selecionar elemento na página';
-                if (highlightIcon) highlightIcon.setAttribute('fill', '#00bfff');
+// --- Painel Flutuante Minimizado/Maximizado ---
+if (!window.toggleMinimizePanel) {
+    window.toggleMinimizePanel = function(panel) {
+        const minimizedId = 'gherkin-panel-minimized';
+        if (panel.style.display !== 'none') {
+            panel.style.display = 'none';
+            let minimized = document.getElementById(minimizedId);
+            if (!minimized) {
+                minimized = document.createElement('button');
+                minimized.id = minimizedId;
+                minimized.title = 'Abrir painel Gherkin';
+                minimized.innerHTML = '<svg width="32" height="32" fill="#0070f3" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#0070f3" stroke-width="2" fill="#fff"/><path d="M8 12h8M12 8v8" stroke="#0070f3" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+                minimized.style.position = 'fixed';
+                minimized.style.left = '18px';
+                minimized.style.bottom = '18px';
+                minimized.style.width = '54px';
+                minimized.style.height = '54px';
+                minimized.style.background = '#0070f3';
+                minimized.style.color = '#fff';
+                minimized.style.borderRadius = '50%';
+                minimized.style.boxShadow = '0 4px 16px rgba(0,0,0,0.18)';
+                minimized.style.display = 'flex';
+                minimized.style.alignItems = 'center';
+                minimized.style.justifyContent = 'center';
+                minimized.style.zIndex = '2147483647';
+                minimized.style.cursor = 'pointer';
+                minimized.style.fontSize = '2.2em';
+                minimized.style.border = 'none';
+                minimized.onclick = () => {
+                    panel.style.display = '';
+                    minimized.remove();
+                };
+                document.body.appendChild(minimized);
             }
+        } else {
+            panel.style.display = '';
+            const minimized = document.getElementById(minimizedId);
+            if (minimized) minimized.remove();
         }
-        updateHighlightBtn();
-        highlightBtn.onclick = () => {
-            window.__gherkinHighlightActive = !window.__gherkinHighlightActive;
-            if (window.__gherkinHighlightActive) {
-                if (typeof window.enableGherkinHighlightMode === 'function') window.enableGherkinHighlightMode();
-            } else {
-                if (typeof window.disableGherkinHighlightMode === 'function') window.disableGherkinHighlightMode();
-            }
-            updateHighlightBtn();
-        };
-    }
-    // Garante que a função global de exportação aponte para a função correta do content.js
-    if (window.gherkin && typeof window.gherkin.exportSelectedFeatures === 'function') {
-        window.exportSelectedFeatures = window.gherkin.exportSelectedFeatures;
-    }
-    // Garante que a função global de exportação aponte para a função correta do content.js
-    if (window.gherkin && typeof window.gherkin.exportSelectedFeatures === 'function') {
-        window.exportSelectedFeatures = window.gherkin.exportSelectedFeatures;
-    }
-
-    // Botões do cabeçalho
-    const minimizeButton = panel.querySelector('#gherkin-minimize');
-    const reopenButton = panel.querySelector('#gherkin-reopen');
-    const closeButton = panel.querySelector('#gherkin-close');
-    if (minimizeButton) minimizeButton.onclick = () => toggleMinimizePanel(panel);
-    if (reopenButton) reopenButton.onclick = () => toggleMinimizePanel(panel);
-    if (closeButton) closeButton.onclick = () => {
-        panel.style.opacity = '0';
-        setTimeout(() => panel.remove(), 300);
-        window.panel = null;
     };
+}
 
-    // Iniciar Feature
-    const startFeatureBtn = panel.querySelector('#start-feature');
-    if (startFeatureBtn) {
-        startFeatureBtn.onclick = () => {
-            const input = panel.querySelector('#feature-name');
-            const name = input.value.trim();
-            if (!name) {
-                showFeedback('Informe o nome da feature!', 'error');
-                return;
-            }
-            window.currentFeature = { name, cenarios: [] };
-            window.currentCenario = null;
-            window.gherkinPanelState = 'cenario';
-            renderPanelContent(panel);
-            setTimeout(() => initializePanelEvents(panel), 100);
-        };
-    }
+// --- Ajuste no createPanel para garantir painel flutuante ---
+const originalCreatePanel = createPanel;
+createPanel = function() {
+    const panel = originalCreatePanel();
+    // Adiciona eventos de minimizar/maximizar
+    setTimeout(() => {
+        const minimizeBtn = panel.querySelector('#gherkin-minimize');
+        if (minimizeBtn) minimizeBtn.onclick = () => window.toggleMinimizePanel(panel);
+        const reopenBtn = panel.querySelector('#gherkin-reopen');
+        if (reopenBtn) reopenBtn.onclick = () => window.toggleMinimizePanel(panel);
+    }, 100);
+    return panel;
+};
 
-    // Iniciar Cenário
-    const startCenarioBtn = panel.querySelector('#start-cenario');
-    if (startCenarioBtn) {
-        startCenarioBtn.onclick = () => {
-            const input = panel.querySelector('#cenario-name');
-            const name = input.value.trim();
-            if (!name) {
-                showFeedback('Informe o nome do cenário!', 'error');
-                return;
-            }
-            // Adiciona automaticamente o passo Given que o usuário acessa a URL atual
-            const url = window.location.href;
-            const givenAcessaUrl = {
-                step: 'Given',
-                acao: 'acessa_url',
-                acaoTexto: 'que o usuário acessa',
-                nomeElemento: url,
-                cssSelector: '',
-                xpath: '',
-                timestamp: Date.now()
-            };
-            window.currentCenario = { name, interactions: [givenAcessaUrl] };
-            window.interactions = window.currentCenario.interactions;
-            window.gherkinPanelState = 'gravando';
-            window.isRecording = true;
-            window.isPaused = false;
-            window.elapsedSeconds = 0;
-            renderPanelContent(panel);
-            setTimeout(() => initializePanelEvents(panel), 100);
-            if (typeof startTimer === 'function') startTimer();
-        };
-    }
-
-    // Encerrar Cenário
-    const endCenarioBtn = panel.querySelector('#end-cenario');
-    if (endCenarioBtn) {
-        endCenarioBtn.onclick = () => {
-            window.isRecording = false;
-            window.isPaused = false;
-            if (typeof stopTimer === 'function') stopTimer();
-            // Salva o cenário na feature
-            if (window.currentFeature && window.currentCenario) {
-                window.currentFeature.cenarios.push(window.currentCenario);
-            }
-            // Pergunta se deseja cadastrar novo cenário
-            showModal('Deseja cadastrar um novo cenário?', () => {
-                // SIM: volta para tela de nome do cenário
-                window.currentCenario = null;
-                window.interactions = [];
-                window.gherkinPanelState = 'cenario';
+// --- Ajuste no renderPanelContent para garantir botões de controle ---
+const originalRenderPanelContent = renderPanelContent;
+renderPanelContent = function(panel) {
+    originalRenderPanelContent(panel);
+    // Garante que os botões de controle estejam presentes
+    setTimeout(() => {
+        const startBtn = document.getElementById('gherkin-start');
+        const stopBtn = document.getElementById('gherkin-stop');
+        if (startBtn) {
+            startBtn.onclick = () => {
+                window.isRecording = true;
+                window.isPaused = false;
+                window.gherkinPanelState = 'gravando';
                 renderPanelContent(panel);
-                setTimeout(() => initializePanelEvents(panel), 100);
-            }, () => {
-                // NÃO: habilita botão de encerrar feature
-                const endFeatureBtn = panel.querySelector('#end-feature');
-                if (endFeatureBtn) {
-                    endFeatureBtn.disabled = false;
-                    endFeatureBtn.style.backgroundColor = '#dc3545';
-                }
-                showFeedback('Cenário encerrado! Você pode encerrar a feature.', 'success');
-            });
-        };
-    }
-
-    // Exportar Projeto
-    const exportProjectBtn = panel.querySelector('#export-project');
-    if (exportProjectBtn) {
-        exportProjectBtn.onclick = async () => {
-            const form = panel.querySelector('#export-form');
-            const selected = Array.from(form.querySelectorAll('input[type="checkbox"]:checked')).map(cb => parseInt(cb.value, 10));
-            if (selected.length === 0) {
-                showFeedback('Selecione ao menos uma feature!', 'error');
-                return;
-            }
-            if (typeof exportSelectedFeatures === 'function') {
-                exportSelectedFeatures(selected);
-            }
-        };
-    }
-
-    // Encerrar Feature (já estava implementado)
-    const endFeatureBtn = panel.querySelector('#end-feature');
-    if (endFeatureBtn) {
-        endFeatureBtn.onclick = () => {
-            showModal('Deseja cadastrar uma nova feature?', () => {
-                if (window.currentFeature && window.currentFeature.cenarios && window.currentFeature.cenarios.length > 0) {
-                    window.gherkinFeatures = window.gherkinFeatures || [];
-                    window.gherkinFeatures.push(window.currentFeature);
-                    showFeedback('Feature salva com sucesso!', 'success');
-                } else {
-                    showFeedback('Adicione pelo menos um cenário!', 'error');
-                    return;
-                }
-                window.currentFeature = null;
-                window.currentCenario = null;
+            };
+        }
+        if (stopBtn) {
+            stopBtn.onclick = () => {
+                window.isRecording = false;
+                window.isPaused = false;
                 window.gherkinPanelState = 'feature';
                 renderPanelContent(panel);
-                setTimeout(() => initializePanelEvents(panel), 100);
-            }, () => {
-                if (window.currentFeature && window.currentFeature.cenarios && window.currentFeature.cenarios.length > 0) {
-                    window.gherkinFeatures = window.gherkinFeatures || [];
-                    window.gherkinFeatures.push(window.currentFeature);
-                    showFeedback('Feature salva com sucesso!', 'success');
-                } else {
-                    showFeedback('Adicione pelo menos um cenário!', 'error');
-                    return;
-                }
-                window.currentFeature = null;
-                window.currentCenario = null;
-                window.gherkinPanelState = 'exportar';
-                renderPanelContent(panel);
-                setTimeout(() => initializePanelEvents(panel), 100);
-            });
-        };
-    }
-
-    // Exportar Selecionadas (painel de exportação)
-    const exportSelectedBtn = panel.querySelector('#export-selected');
-    if (exportSelectedBtn) {
-        exportSelectedBtn.onclick = () => {
-            const form = panel.querySelector('#export-form');
-            if (!form) {
-                showFeedback('Formulário de exportação não encontrado!', 'error');
-                return;
-            }
-            const selected = Array.from(form.querySelectorAll('input[type="checkbox"]:checked')).map(cb => parseInt(cb.value, 10));
-            if (selected.length === 0) {
-                showFeedback('Selecione ao menos uma feature!', 'error');
-                return;
-            }
-            // Garante chamada global e feedback de erro
-            if (window.exportSelectedFeatures && typeof window.exportSelectedFeatures === 'function') {
-                window.exportSelectedFeatures(selected);
-            } else {
-                showFeedback('Função de exportação não encontrada! Recarregue a página.', 'error');
-            }
-        };
-    }
-
-    // Nova Feature (painel de exportação)
-    const newFeatureBtn = panel.querySelector('#new-feature');
-    if (newFeatureBtn) {
-        newFeatureBtn.onclick = () => {
-            window.currentFeature = null;
-            window.currentCenario = null;
-            window.gherkinPanelState = 'feature';
-            renderPanelContent(panel);
-            setTimeout(() => initializePanelEvents(panel), 100);
-        };
-    }
-}
+            };
+        }
+    }, 100);
+};
 export {
     renderPanelContent,
     createPanel,

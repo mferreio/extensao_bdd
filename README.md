@@ -1,5 +1,3 @@
-
-
 # Assistente Automatizador
 
 > Extensão para navegador que grava interações em páginas web e exporta cenários para automação de testes (Cucumber, Selenium, etc).
@@ -23,13 +21,37 @@
 O **Assistente Automatizador** é uma extensão para navegador que permite gravar, visualizar e exportar interações do usuário em páginas web. Ideal para gerar cenários de testes automatizados em formato Gherkin/Cucumber, Selenium, entre outros.
 
 ## 🚀 Funcionalidades
-- Gravação de cliques, rolagens, preenchimento de campos e teclas pressionadas
-- Exportação de cenários em formatos `TXT`, `JSON` e `FEATURES` (Gherkin)
-- Geração automática de arquivos Python (`pages.py`, `steps.py`, etc.)
-- Painel flutuante, responsivo e acessível
-- Destaque visual de elementos ao passar o mouse (tipo DevTools)
-- Compatível com ferramentas de automação modernas
-- Proteção de dados: tudo local, sem envio para servidores
+
+### Funcionalidades Principais
+- **Gravação de Interações**: Captura cliques, rolagens, preenchimento de campos, teclas pressionadas e mudanças em elementos.
+- **Painel Flutuante e Responsivo**: Interface moderna, flutuante, minimizável/maximizável, com navegação por teclado e acessibilidade (ARIA, foco, tabulação lógica).
+- **Destaque Visual**: Realce de elementos ao passar o mouse, similar ao DevTools, para facilitar a seleção de elementos.
+- **Exportação de Cenários**:
+  - Exporta cenários em formatos `TXT`, `JSON` e `FEATURES` (Gherkin)
+  - Geração automática de arquivos Python (`pages.py`, `steps.py`, `environment.py`, `requirements.txt`)
+  - Exportação de README.md para cada feature/cenário
+- **Undo/Redo**: Permite desfazer e refazer interações gravadas.
+- **Log Detalhado**: Visualização detalhada de cada interação, incluindo contexto de Shadow DOM/Iframe, com modal acessível.
+- **Timer de Execução**: Cronômetro integrado para medir o tempo de gravação dos cenários.
+- **Upload de Evidências**: Modal para adicionar nomes de arquivos de evidência aos cenários.
+- **Login e Senha**: Modal dedicado para registrar ações de login de forma segura.
+- **Validações e Esperas**: Suporte a validações de existência, conteúdo, valores e esperas inteligentes (ex: esperar elemento aparecer/desaparecer).
+- **Configurações Avançadas**: Permite customizar templates de steps, nomes padrão e exportação via tela de opções.
+- **Compatibilidade com Shadow DOM e Iframes**: Captura e indica corretamente elementos dentro desses contextos.
+- **Acessibilidade**: Todos os controles do painel e modais são acessíveis por teclado, com foco visível, ARIA labels e roles apropriados.
+- **Feedback Visual e Alertas**: Mensagens de sucesso/erro com fechamento por teclado e leitura por leitores de tela.
+- **Proteção de Dados**: Todos os dados são armazenados localmente, sem envio para servidores.
+
+### Funcionalidades Adicionais
+- **Painel Movível**: O painel pode ser arrastado para qualquer lugar da tela.
+- **Exportação em Massa**: Permite exportar múltiplas features/cenários de uma vez.
+- **Botões de Controle**: Play, Pause, Finalizar, Exportar, Limpar, Encerrar Cenário/Feature.
+- **Personalização de Tema**: Suporte a tema claro/escuro (dark mode).
+- **Atalhos de Teclado**: Navegação por Tab, Shift+Tab, Enter, Espaço e Escape em todos os modais e painel.
+- **Mensagens e Tooltips**: Dicas contextuais para cada ação selecionada.
+- **Compatível com Chrome e navegadores baseados em Chromium**.
+
+---
 
 ## 💻 Instalação
 **Pré-requisitos:**

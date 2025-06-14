@@ -62,210 +62,67 @@ function debounce(func, wait) {
 
 
 function getCSSSelector(element) {
-    // Estrutura de retorno
-    let result = {
-        css: null,
-        tipo: null,
-        aviso: null,
-        ocorrencias: 0,
-        indice: null // índice sugerido (1-based)
-    };
-    const attrPriority = [
-        'data-testid', 'data-qa', 'formcontrolname', 'aria-label', 'data-pc-name', 'data-pc-section', 'id', 'name', 'type', 'placeholder', 'href'
-    ];
-    const genericTags = ['div', 'span', 'button', 'input', 'label', 'a', 'ul', 'li', 'tr', 'td', 'th', 'table', 'form', 'section', 'article', 'header', 'footer'];
-
-    // 1. Prioridade máxima: atributos robustos e únicos
+    // Estratégia multi-nível inspirada no XPathGenerator
+    const inlineTags = ['span', 'strong', 'i', 'b', 'svg', 'img', 'em', 'label'];
+    const parentPriority = ['button', 'a', 'label', 'input', 'select', 'textarea', 'li', 'tr', 'td', 'th'];
+    if (element && inlineTags.includes(element.tagName.toLowerCase())) {
+        let parentRelevant = element.parentElement;
+        while (parentRelevant) {
+            if (parentPriority.includes(parentRelevant.tagName.toLowerCase())) {
+                element = parentRelevant;
+                break;
+            }
+            parentRelevant = parentRelevant.parentElement;
+        }
+    }
+    if (!element || !element.tagName) return { css: '', tipo: 'invalido', ocorrencias: 0, indice: null, aviso: 'Elemento inválido.' };
+    // 1) Tenta ID único
+    if (element.id && document.querySelectorAll(`#${CSS.escape(element.id)}`).length === 1) {
+        return { css: `#${CSS.escape(element.id)}`, tipo: 'robusto', ocorrencias: 1, indice: 1 };
+    }
+    // 2) Tenta atributos robustos e únicos
+    const attrPriority = ['data-testid', 'data-qa', 'formcontrolname', 'aria-label', 'data-pc-name', 'data-pc-section', 'label', 'id', 'name', 'type', 'placeholder', 'href'];
     for (const attr of attrPriority) {
         const val = element.getAttribute && element.getAttribute(attr);
         if (val) {
             let selector = `${element.tagName.toLowerCase()}[${attr}="${val}"]`;
             let matches = document.querySelectorAll(selector);
             if (matches.length === 1) {
-                result.css = selector;
-                result.tipo = 'robusto';
-                result.ocorrencias = 1;
-                result.indice = 1;
-                return result;
+                return { css: selector, tipo: 'robusto', ocorrencias: 1, indice: 1 };
             } else if (matches.length > 1) {
-                result.css = selector;
-                result.tipo = 'nao_unico';
-                result.ocorrencias = matches.length;
-                result.indice = Array.from(matches).indexOf(element) + 1;
-                result.aviso = `Seletor não é único. Existem ${matches.length} elementos. Escolha a ocorrência desejada.`;
-                return result;
-            }
-            selector = `[${attr}="${val}"]`;
-            matches = document.querySelectorAll(selector);
-            if (matches.length === 1) {
-                result.css = selector;
-                result.tipo = 'robusto';
-                result.ocorrencias = 1;
-                result.indice = 1;
-                return result;
-            } else if (matches.length > 1) {
-                result.css = selector;
-                result.tipo = 'nao_unico';
-                result.ocorrencias = matches.length;
-                result.indice = Array.from(matches).indexOf(element) + 1;
-                result.aviso = `Seletor não é único. Existem ${matches.length} elementos. Escolha a ocorrência desejada.`;
-                return result;
+                return { css: selector, tipo: 'nao_unico', ocorrencias: matches.length, indice: Array.from(matches).indexOf(element) + 1, aviso: `Seletor não é único. Existem ${matches.length} elementos. Escolha a ocorrência desejada.` };
             }
         }
     }
-    // 2. Se tem id único e não é dinâmico
-    if (element.id && document.querySelectorAll(`#${CSS.escape(element.id)}`).length === 1 && !/^(_|auto|ember|react|ng|mat|p-)/i.test(element.id)) {
-        result.css = `${element.tagName.toLowerCase()}#${element.id}`;
-        result.tipo = 'robusto';
-        result.ocorrencias = 1;
-        result.indice = 1;
-        return result;
-    }
-    // 3. Se tem classe única e não genérica
+    // 3) Tenta por classes únicas
     if (element.className && typeof element.className === 'string') {
         const classList = element.className.trim().split(/\s+/).filter(Boolean);
         for (const cls of classList) {
-            if (/^(p-|ng-|mat-|ant-|Mui|css-)/.test(cls)) continue;
-            const selector = `.${CSS.escape(cls)}`;
+            const selector = `${element.tagName.toLowerCase()}.${CSS.escape(cls)}`;
             const matches = document.querySelectorAll(selector);
             if (matches.length === 1) {
-                result.css = `${element.tagName.toLowerCase()}.${cls}`;
-                result.tipo = 'classe_unica';
-                result.ocorrencias = 1;
-                result.indice = 1;
-                return result;
+                return { css: selector, tipo: 'classe_unica', ocorrencias: 1, indice: 1 };
             } else if (matches.length > 1) {
-                result.css = `${element.tagName.toLowerCase()}.${cls}`;
-                result.tipo = 'nao_unico';
-                result.ocorrencias = matches.length;
-                result.indice = Array.from(matches).indexOf(element) + 1;
-                result.aviso = `Seletor não é único. Existem ${matches.length} elementos. Escolha a ocorrência desejada.`;
-                return result;
+                return { css: selector, tipo: 'nao_unico', ocorrencias: matches.length, indice: Array.from(matches).indexOf(element) + 1, aviso: `Seletor não é único. Existem ${matches.length} elementos. Escolha a ocorrência desejada.` };
             }
         }
     }
-    // 4. Busca contexto de componente pai relevante (PrimeNG/Angular/React)
-    const COMPONENT_TAGS = [
-        'p-calendar', 'p-inputnumber', 'p-fileupload', 'p-dropdown', 'p-inputmask', 'p-checkbox', 'p-radiobutton', 'p-inputswitch', 'p-autocomplete', 'p-multiselect', 'p-editor', 'p-slider', 'p-colorpicker', 'p-rating', 'p-cascadeselect', 'p-chips', 'p-password', 'p-inputtext', 'p-listbox', 'p-selectbutton', 'p-togglebutton', 'p-treeselect', 'p-inputgroup', 'mat-form-field', 'mat-select', 'mat-checkbox', 'mat-radio-button', 'mat-slide-toggle', 'mat-slider', 'mat-input', 'mat-autocomplete', 'button', 'input', 'select', 'textarea'
-    ];
-    let parent = element.parentElement;
-    let parentSelector = '';
-    let depth = 0;
-    while (parent && depth < 4) {
-        const tag = parent.tagName ? parent.tagName.toLowerCase() : '';
-        if (COMPONENT_TAGS.includes(tag)) {
-            for (const attr of attrPriority) {
-                const val = parent.getAttribute && parent.getAttribute(attr);
-                if (val && document.querySelectorAll(`${tag}[${attr}="${CSS.escape(val)}"]`).length === 1) {
-                    parentSelector = `${tag}[${attr}="${val}"]`;
-                    break;
-                }
-            }
-            if (!parentSelector) {
-                parentSelector = tag;
-            }
-            break;
-        }
-        parent = parent.parentElement;
-        depth++;
-    }
-    if (parentSelector) {
+    // 4) Tenta contexto do pai com atributo único
+    let parentContext = element.parentElement;
+    for (let d = 0; parentContext && d < 3; d++) {
         for (const attr of attrPriority) {
-            const val = element.getAttribute && element.getAttribute(attr);
-            if (val) {
-                const selector = `${parentSelector} ${element.tagName.toLowerCase()}[${attr}="${val}"]`;
+            const val = parentContext.getAttribute && parentContext.getAttribute(attr);
+            if (val && document.querySelectorAll(`${parentContext.tagName.toLowerCase()}[${attr}="${val}"]`).length === 1) {
+                const selector = `${parentContext.tagName.toLowerCase()}[${attr}="${val}"] ${element.tagName.toLowerCase()}`;
                 const matches = document.querySelectorAll(selector);
                 if (matches.length === 1) {
-                    result.css = selector;
-                    result.tipo = 'componente_pai';
-                    result.ocorrencias = 1;
-                    result.indice = 1;
-                    return result;
-                } else if (matches.length > 1) {
-                    result.css = selector;
-                    result.tipo = 'nao_unico';
-                    result.ocorrencias = matches.length;
-                    result.indice = Array.from(matches).indexOf(element) + 1;
-                    result.aviso = `Seletor não é único. Existem ${matches.length} elementos. Escolha a ocorrência desejada.`;
-                    return result;
+                    return { css: selector, tipo: 'contexto_pai', ocorrencias: 1, indice: 1 };
                 }
             }
         }
-        const selector = `${parentSelector} ${element.tagName.toLowerCase()}`;
-        const matches = document.querySelectorAll(selector);
-        if (matches.length === 1) {
-            result.css = selector;
-            result.tipo = 'componente_pai';
-            result.ocorrencias = 1;
-            result.indice = 1;
-            return result;
-        } else if (matches.length > 1) {
-            result.css = selector;
-            result.tipo = 'nao_unico';
-            result.ocorrencias = matches.length;
-            result.indice = Array.from(matches).indexOf(element) + 1;
-            result.aviso = `Seletor não é único. Existem ${matches.length} elementos. Escolha a ocorrência desejada.`;
-            return result;
-        }
+        parentContext = parentContext.parentElement;
     }
-    // 5. Procura ancestral robusto
-    let ancestor = element.parentElement;
-    let ancestorSelector = '';
-    let ancestorDepth = 0;
-    while (ancestor && ancestorDepth < 4) {
-        for (const attr of attrPriority) {
-            const val = ancestor.getAttribute && ancestor.getAttribute(attr);
-            if (val && document.querySelectorAll(`${ancestor.tagName.toLowerCase()}[${attr}="${CSS.escape(val)}"]`).length === 1) {
-                ancestorSelector = `${ancestor.tagName.toLowerCase()}[${attr}="${val}"]`;
-                break;
-            }
-        }
-        if (ancestorSelector) break;
-        ancestor = ancestor.parentElement;
-        ancestorDepth++;
-    }
-    if (ancestorSelector) {
-        for (const attr of attrPriority) {
-            const val = element.getAttribute && element.getAttribute(attr);
-            if (val) {
-                const selector = `${ancestorSelector} ${element.tagName.toLowerCase()}[${attr}="${val}"]`;
-                const matches = document.querySelectorAll(selector);
-                if (matches.length === 1) {
-                    result.css = selector;
-                    result.tipo = 'ancestral';
-                    result.ocorrencias = 1;
-                    result.indice = 1;
-                    return result;
-                } else if (matches.length > 1) {
-                    result.css = selector;
-                    result.tipo = 'nao_unico';
-                    result.ocorrencias = matches.length;
-                    result.indice = Array.from(matches).indexOf(element) + 1;
-                    result.aviso = `Seletor não é único. Existem ${matches.length} elementos. Escolha a ocorrência desejada.`;
-                    return result;
-                }
-            }
-        }
-        const siblings = Array.from(ancestor.querySelectorAll(element.tagName.toLowerCase()));
-        if (siblings.length > 1) {
-            const idx = siblings.indexOf(element) + 1;
-            if (idx > 0) {
-                result.css = `${ancestorSelector} ${element.tagName.toLowerCase()}:nth-of-type(${idx})`;
-                result.tipo = 'ancestral';
-                result.ocorrencias = siblings.length;
-                result.indice = idx;
-                result.aviso = `Seletor não é único. Existem ${siblings.length} elementos. Escolha a ocorrência desejada.`;
-                return result;
-            }
-        } else if (siblings.length === 1) {
-            result.css = `${ancestorSelector} ${element.tagName.toLowerCase()}`;
-            result.tipo = 'ancestral';
-            result.ocorrencias = 1;
-            result.indice = 1;
-            return result;
-        }
-    }
-    // 6. Fallback: tenta compor seletor hierárquico até 3 níveis
+    // 5) Fallback hierárquico até 3 níveis
     let chain = element.tagName.toLowerCase();
     let p = element.parentElement;
     let d = 0;
@@ -274,349 +131,111 @@ function getCSSSelector(element) {
         p = p.parentElement;
         d++;
     }
-    if (!genericTags.includes(chain) && !/^([a-z]+)(\s*[> ]\s*[a-z]+)?$/i.test(chain)) {
-        const matches = document.querySelectorAll(chain);
-        if (matches.length === 1) {
-            result.css = chain;
-            result.tipo = 'hierarquico';
-            result.ocorrencias = 1;
-            result.indice = 1;
-            return result;
-        } else if (matches.length > 1) {
-            result.css = chain;
-            result.tipo = 'nao_unico';
-            result.ocorrencias = matches.length;
-            result.indice = Array.from(matches).indexOf(element) + 1;
-            result.aviso = `Seletor não é único. Existem ${matches.length} elementos. Escolha a ocorrência desejada.`;
-            return result;
-        }
-    }
-    if (!element || element.nodeType !== Node.ELEMENT_NODE) {
-        result.aviso = 'Elemento inválido.';
-        return result;
-    }
-    // 7. Seletor genérico
-    let path = element.tagName.toLowerCase();
-    parent = element.parentElement;
-    depth = 0;
-    while (parent && depth < 2) {
-        if (parent.id && document.querySelectorAll(`#${CSS.escape(parent.id)}`).length === 1 && !/^(_|auto|ember|react|ng|mat|p-)/i.test(parent.id)) {
-            path = `${parent.tagName.toLowerCase()}#${parent.id} > ${path}`;
-            break;
-        }
-        parent = parent.parentElement;
-        depth++;
-    }
-    if (genericTags.includes(path) || /^([a-z]+)(\s*[> ]\s*[a-z]+)?$/i.test(path)) {
-        const msg = `Atenção: seletor CSS genérico detectado ('${path}'). Adicione um atributo único (ex: data-testid) ao elemento para garantir robustez nos testes.`;
-        result.aviso = msg;
-        result.tipo = 'generico';
-        result.css = null;
-        if (typeof showFeedback === 'function') {
-            showFeedback(msg, 'error');
-        }
-        if (typeof console !== 'undefined') {
-            console.warn(msg);
-        }
-        return result;
-    }
-    const matches = document.querySelectorAll(path);
+    const matches = document.querySelectorAll(chain);
     if (matches.length === 1) {
-        result.css = path;
-        result.tipo = 'generico';
-        result.ocorrencias = 1;
-        result.indice = 1;
-        return result;
+        return { css: chain, tipo: 'hierarquico', ocorrencias: 1, indice: 1 };
     } else if (matches.length > 1) {
-        result.css = path;
-        result.tipo = 'nao_unico';
-        result.ocorrencias = matches.length;
-        result.indice = Array.from(matches).indexOf(element) + 1;
-        result.aviso = `Seletor não é único. Existem ${matches.length} elementos. Escolha a ocorrência desejada.`;
-        return result;
+        return { css: chain, tipo: 'nao_unico', ocorrencias: matches.length, indice: Array.from(matches).indexOf(element) + 1, aviso: `Seletor não é único. Existem ${matches.length} elementos. Escolha a ocorrência desejada.` };
     }
-    result.css = path;
-    result.tipo = 'generico';
-    result.ocorrencias = 0;
-    result.indice = null;
-    return result;
+    // 6) Fallback genérico
+    return { css: element.tagName.toLowerCase(), tipo: 'generico', ocorrencias: 0, indice: null, aviso: 'Seletor genérico. Considere adicionar um atributo único ao elemento.' };
 }
 
-
 function getRobustXPath(element) {
-    let result = {
-        xpath: null,
-        tipo: null,
-        aviso: null,
-        ocorrencias: 0,
-        indice: null
-    };
-    const attrs = [
-        'data-testid', 'data-qa', 'formcontrolname', 'aria-label', 'data-pc-name', 'data-pc-section', 'name', 'type', 'placeholder', 'title', 'role'
-    ];
-    // 1. id único e estável
-    if (element.id && document.querySelectorAll(`#${CSS.escape(element.id)}`).length === 1 && !/^(_|auto|ember|react|ng|mat|p-)/i.test(element.id)) {
-        result.xpath = `//*[@id="${element.id}"]`;
-        result.tipo = 'robusto';
-        result.ocorrencias = 1;
-        result.indice = 1;
-        return result;
+    // Estratégia multi-nível inspirada no XPathGenerator do gherkinrecorder
+    const inlineTags = ['span', 'strong', 'i', 'b', 'svg', 'img', 'em', 'label'];
+    const parentPriority = ['button', 'a', 'label', 'input', 'select', 'textarea', 'li', 'tr', 'td', 'th'];
+    if (element && inlineTags.includes(element.tagName.toLowerCase())) {
+        let parentRelevant = element.parentElement;
+        while (parentRelevant) {
+            if (parentPriority.includes(parentRelevant.tagName.toLowerCase())) {
+                element = parentRelevant;
+                break;
+            }
+            parentRelevant = parentRelevant.parentElement;
+        }
     }
-    // 2. Atributos robustos e únicos
+    if (!element || !element.tagName) return { xpath: '', tipo: 'invalido', ocorrencias: 0, indice: null, aviso: 'Elemento inválido.' };
+    // 1) Tenta XPath por texto visível único
+    const text = element.textContent && element.textContent.trim();
+    if (text) {
+        const escaped = text.replace(/'/g, "\'");
+        const possibleXPaths = [
+            `//${element.tagName.toLowerCase()}[text()='${escaped}']`,
+            `//${element.tagName.toLowerCase()}[normalize-space(.)='${escaped}']`,
+            `//${element.tagName.toLowerCase()}[contains(.,'${escaped}')]`
+        ];
+        for (const xp of possibleXPaths) {
+            try {
+                const count = document.evaluate(`count(${xp})`, document, null, XPathResult.NUMBER_TYPE, null).numberValue;
+                if (count === 1) {
+                    return { xpath: xp, tipo: 'texto_unico', ocorrencias: 1, indice: 1 };
+                } else if (count > 1) {
+                    const matches = document.evaluate(xp, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+                    for (let i = 0; i < matches.snapshotLength; i++) {
+                        if (matches.snapshotItem(i) === element) {
+                            const indexedXp = `(${xp})[${i + 1}]`;
+                            const unique = document.evaluate(`count(${indexedXp})`, document, null, XPathResult.NUMBER_TYPE, null).numberValue === 1;
+                            if (unique) {
+                                return { xpath: indexedXp, tipo: 'texto_indexado', ocorrencias: count, indice: i + 1 };
+                            }
+                        }
+                    }
+                }
+            } catch {}
+        }
+    }
+    // 2) Tenta atributos robustos e únicos
+    const attrs = ['data-testid', 'data-qa', 'formcontrolname', 'aria-label', 'data-pc-name', 'data-pc-section', 'label', 'id', 'name', 'type', 'placeholder', 'title', 'role'];
     for (const attr of attrs) {
         const val = element.getAttribute && element.getAttribute(attr);
         if (val) {
-            const xpath = `//${element.tagName.toLowerCase()}[@${attr}='${val}']`;
+            const xp = `//${element.tagName.toLowerCase()}[@${attr}='${val}']`;
             try {
-                const count = document.evaluate(`count(${xpath})`, document, null, XPathResult.NUMBER_TYPE, null).numberValue;
+                const count = document.evaluate(`count(${xp})`, document, null, XPathResult.NUMBER_TYPE, null).numberValue;
                 if (count === 1) {
-                    result.xpath = xpath;
-                    result.tipo = 'robusto';
-                    result.ocorrencias = 1;
-                    result.indice = 1;
-                    return result;
+                    return { xpath: xp, tipo: 'robusto', ocorrencias: 1, indice: 1 };
                 } else if (count > 1) {
-                    // Encontrou múltiplos, retorna info
-                    const all = Array.from(document.querySelectorAll(element.tagName.toLowerCase() + `[${attr}='${val}']`));
-                    result.xpath = xpath;
-                    result.tipo = 'nao_unico';
-                    result.ocorrencias = count;
-                    result.indice = all.indexOf(element) + 1;
-                    result.aviso = `XPath não é único. Existem ${count} elementos. Escolha a ocorrência desejada.`;
-                    return result;
+                    const matches = document.querySelectorAll(`${element.tagName.toLowerCase()}[${attr}='${val}']`);
+                    return { xpath: xp, tipo: 'nao_unico', ocorrencias: count, indice: Array.from(matches).indexOf(element) + 1, aviso: `XPath não é único. Existem ${count} elementos. Escolha a ocorrência desejada.` };
                 }
-            } catch (e) { /* ignora erro de XPath inválido */ }
+            } catch {}
         }
     }
-    // 3. Componente pai robusto
-    const COMPONENT_TAGS = [
-        'p-calendar', 'p-inputnumber', 'p-fileupload', 'p-dropdown', 'p-inputmask', 'p-checkbox', 'p-radiobutton', 'p-inputswitch', 'p-autocomplete', 'p-multiselect', 'p-editor', 'p-slider', 'p-colorpicker', 'p-rating', 'p-cascadeselect', 'p-chips', 'p-password', 'p-inputtext', 'p-listbox', 'p-selectbutton', 'p-togglebutton', 'p-treeselect', 'p-inputgroup', 'mat-form-field', 'mat-select', 'mat-checkbox', 'mat-radio-button', 'mat-slide-toggle', 'mat-slider', 'mat-input', 'mat-autocomplete', 'button', 'input', 'select', 'textarea'
-    ];
-    let parent = element.parentElement;
-    let parentXPath = '';
-    let depth = 0;
-    while (parent && depth < 4) {
-        const tag = parent.tagName ? parent.tagName.toLowerCase() : '';
-        if (COMPONENT_TAGS.includes(tag)) {
-            for (const attr of attrs) {
-                const val = parent.getAttribute && parent.getAttribute(attr);
-                if (val) {
-                    const parentXpath = `//${tag}[@${attr}='${val}']`;
-                    try {
-                        if (document.evaluate(`count(${parentXpath})`, document, null, XPathResult.NUMBER_TYPE, null).numberValue === 1) {
-                            parentXPath = parentXpath;
-                            break;
-                        }
-                    } catch (e) { /* ignora erro de XPath inválido */ }
-                }
-            }
-            if (!parentXPath) {
-                parentXPath = `//${tag}`;
-            }
-            break;
-        }
-        parent = parent.parentElement;
-        depth++;
-    }
-    if (parentXPath) {
-        for (const attr of attrs) {
-            const val = element.getAttribute && element.getAttribute(attr);
-            if (val) {
-                const fullXpath = `${parentXPath}//${element.tagName.toLowerCase()}[@${attr}='${val}']`;
-                try {
-                    const count = document.evaluate(`count(${fullXpath})`, document, null, XPathResult.NUMBER_TYPE, null).numberValue;
-                    if (count === 1) {
-                        result.xpath = fullXpath;
-                        result.tipo = 'componente_pai';
-                        result.ocorrencias = 1;
-                        result.indice = 1;
-                        return result;
-                    } else if (count > 1) {
-                        const all = Array.from(document.querySelectorAll(element.tagName.toLowerCase() + `[${attr}='${val}']`));
-                        result.xpath = fullXpath;
-                        result.tipo = 'nao_unico';
-                        result.ocorrencias = count;
-                        result.indice = all.indexOf(element) + 1;
-                        result.aviso = `XPath não é único. Existem ${count} elementos. Escolha a ocorrência desejada.`;
-                        return result;
-                    }
-                } catch (e) { /* ignora erro de XPath inválido */ }
-            }
-        }
-        // Para o caso sem atributo
-        const fullXpath = `${parentXPath}//${element.tagName.toLowerCase()}`;
+    // 3) Tenta XPath indexado por ordem entre irmãos
+    const tn = element.tagName.toLowerCase();
+    const doc = element.ownerDocument || document;
+    const allSameTag = Array.from(doc.getElementsByTagName(tn));
+    const index = allSameTag.indexOf(element);
+    if (index !== -1) {
+        const xpIndex = `//${tn}[${index + 1}]`;
         try {
-            const all = Array.from(document.querySelectorAll(element.tagName.toLowerCase()));
-            if (all.length === 1) {
-                result.xpath = fullXpath;
-                result.tipo = 'componente_pai';
-                result.ocorrencias = 1;
-                result.indice = 1;
-                return result;
-            } else if (all.length > 1) {
-                result.xpath = fullXpath;
-                result.tipo = 'nao_unico';
-                result.ocorrencias = all.length;
-                result.indice = all.indexOf(element) + 1;
-                result.aviso = `XPath não é único. Existem ${all.length} elementos. Escolha a ocorrência desejada.`;
-                return result;
+            const unique = document.evaluate(`count(${xpIndex})`, document, null, XPathResult.NUMBER_TYPE, null).numberValue === 1;
+            if (unique) {
+                return { xpath: xpIndex, tipo: 'indexado', ocorrencias: 1, indice: index + 1 };
             }
-        } catch (e) {}
+        } catch {}
     }
-    // 4. Ancestral robusto
-    let ancestor = element.parentElement;
-    let ancestorXPath = '';
-    let ancestorDepth = 0;
-    while (ancestor && ancestorDepth < 4) {
-        for (const attr of attrs) {
-            const val = ancestor.getAttribute && ancestor.getAttribute(attr);
-            if (val) {
-                const xpath = `//${ancestor.tagName.toLowerCase()}[@${attr}='${val}']`;
-                try {
-                    if (document.evaluate(`count(${xpath})`, document, null, XPathResult.NUMBER_TYPE, null).numberValue === 1) {
-                        ancestorXPath = xpath;
-                        break;
-                    }
-                } catch (e) { /* ignora erro de XPath inválido */ }
+    // 4) Fallback absoluto (como Chrome)
+    function getAbsoluteXPathBySiblings(el) {
+        if (!el || !el.tagName) return '';
+        const doc = el.ownerDocument || document;
+        if (el === doc.documentElement) return '/html[1]';
+        if (el === doc.body) return '/html[1]/body[1]';
+        const parent = el.parentNode;
+        if (!parent || !(parent instanceof Element)) return `/${el.tagName.toLowerCase()}[1]`;
+        const tagName = el.tagName.toLowerCase();
+        let idx = 1;
+        for (const sibling of parent.children) {
+            if (sibling === el) {
+                return getAbsoluteXPathBySiblings(parent) + `/${tagName}[${idx}]`;
             }
+            if (sibling.tagName && sibling.tagName.toLowerCase() === tagName) idx++;
         }
-        if (ancestorXPath) break;
-        ancestor = ancestor.parentElement;
-        ancestorDepth++;
+        return `/${tagName}[1]`;
     }
-    if (ancestorXPath) {
-        for (const attr of attrs) {
-            const val = element.getAttribute && element.getAttribute(attr);
-            if (val) {
-                const fullXpath = `${ancestorXPath}//${element.tagName.toLowerCase()}[@${attr}='${val}']`;
-                try {
-                    const count = document.evaluate(`count(${fullXpath})`, document, null, XPathResult.NUMBER_TYPE, null).numberValue;
-                    if (count === 1) {
-                        result.xpath = fullXpath;
-                        result.tipo = 'ancestral';
-                        result.ocorrencias = 1;
-                        result.indice = 1;
-                        return result;
-                    } else if (count > 1) {
-                        const all = Array.from(document.querySelectorAll(element.tagName.toLowerCase() + `[${attr}='${val}']`));
-                        result.xpath = fullXpath;
-                        result.tipo = 'nao_unico';
-                        result.ocorrencias = count;
-                        result.indice = all.indexOf(element) + 1;
-                        result.aviso = `XPath não é único. Existem ${count} elementos. Escolha a ocorrência desejada.`;
-                        return result;
-                    }
-                } catch (e) { /* ignora erro de XPath inválido */ }
-            }
-        }
-        const siblings = Array.from(ancestor.querySelectorAll(element.tagName.toLowerCase()));
-        if (siblings.length > 1) {
-            const idx = siblings.indexOf(element) + 1;
-            if (idx > 0) {
-                result.xpath = `${ancestorXPath}//${element.tagName.toLowerCase()}[${idx}]`;
-                result.tipo = 'ancestral';
-                result.ocorrencias = siblings.length;
-                result.indice = idx;
-                result.aviso = `XPath não é único. Existem ${siblings.length} elementos. Escolha a ocorrência desejada.`;
-                return result;
-            }
-        } else if (siblings.length === 1) {
-            result.xpath = `${ancestorXPath}//${element.tagName.toLowerCase()}`;
-            result.tipo = 'ancestral';
-            result.ocorrencias = 1;
-            result.indice = 1;
-            return result;
-        }
-    }
-    // 5. Classe única e não genérica
-    if (element.className && typeof element.className === 'string') {
-        const classList = element.className.trim().split(/\s+/).filter(Boolean);
-        for (const cls of classList) {
-            if (/^(p-|ng-|mat-|ant-|Mui|css-)/.test(cls)) continue;
-            const xpath = `//${element.tagName.toLowerCase()}[contains(concat(' ',normalize-space(@class),' '),' ${cls} ')]`;
-            try {
-                const count = document.evaluate(`count(${xpath})`, document, null, XPathResult.NUMBER_TYPE, null).numberValue;
-                if (count === 1) {
-                    result.xpath = xpath;
-                    result.tipo = 'classe_unica';
-                    result.ocorrencias = 1;
-                    result.indice = 1;
-                    return result;
-                } else if (count > 1) {
-                    const all = Array.from(document.querySelectorAll(element.tagName.toLowerCase() + `.${cls}`));
-                    result.xpath = xpath;
-                    result.tipo = 'nao_unico';
-                    result.ocorrencias = count;
-                    result.indice = all.indexOf(element) + 1;
-                    result.aviso = `XPath não é único. Existem ${count} elementos. Escolha a ocorrência desejada.`;
-                    return result;
-                }
-            } catch (e) {}
-        }
-    }
-    // 6. Fallback: XPath por texto visível único
-    if (element.tagName && element.textContent) {
-        const text = element.textContent.trim();
-        if (text && text.length > 0) {
-            const matches = Array.from(document.querySelectorAll(element.tagName.toLowerCase()))
-                .filter(el => el.textContent && el.textContent.trim() === text);
-            if (matches.length === 1) {
-                result.xpath = `//${element.tagName.toLowerCase()}[normalize-space(text())='${text.replace(/'/g, "\'")}']`;
-                result.tipo = 'texto_unico';
-                result.ocorrencias = 1;
-                result.indice = 1;
-                return result;
-            } else if (matches.length > 1) {
-                result.xpath = `//${element.tagName.toLowerCase()}[normalize-space(text())='${text.replace(/'/g, "\'")}']`;
-                result.tipo = 'nao_unico';
-                result.ocorrencias = matches.length;
-                result.indice = matches.indexOf(element) + 1;
-                result.aviso = `XPath não é único. Existem ${matches.length} elementos. Escolha a ocorrência desejada.`;
-                return result;
-            }
-        }
-    }
-    if (!element || element.nodeType !== Node.ELEMENT_NODE) {
-        result.aviso = 'Elemento inválido.';
-        return result;
-    }
-    // 7. Caminho relativo curto (até 2 níveis de parent com id estável)
-    let path = element.tagName.toLowerCase();
-    parent = element.parentElement;
-    depth = 0;
-    while (parent && depth < 2) {
-        if (parent.id && document.querySelectorAll(`#${CSS.escape(parent.id)}`).length === 1 && !/^(_|auto|ember|react|ng|mat|p-)/i.test(parent.id)) {
-            path = `${parent.tagName.toLowerCase()}[@id="${parent.id}"]/${path}`;
-            break;
-        }
-        parent = parent.parentElement;
-        depth++;
-    }
-    const xpath = `//${path}`;
-    try {
-        const all = Array.from(document.querySelectorAll(element.tagName.toLowerCase()));
-        if (all.length === 1) {
-            result.xpath = xpath;
-            result.tipo = 'generico';
-            result.ocorrencias = 1;
-            result.indice = 1;
-            result.aviso = 'XPath genérico. Considere adicionar um atributo único ao elemento.';
-            return result;
-        } else if (all.length > 1) {
-            result.xpath = xpath;
-            result.tipo = 'nao_unico';
-            result.ocorrencias = all.length;
-            result.indice = all.indexOf(element) + 1;
-            result.aviso = `XPath não é único. Existem ${all.length} elementos. Escolha a ocorrência desejada.`;
-            return result;
-        }
-    } catch (e) {}
-    result.xpath = xpath;
-    result.tipo = 'generico';
-    result.ocorrencias = 0;
-    result.indice = null;
-    result.aviso = 'XPath genérico. Considere adicionar um atributo único ao elemento.';
-    return result;
+    const absXpath = `/${getAbsoluteXPathBySiblings(element)}`;
+    return { xpath: absXpath, tipo: 'absoluto', ocorrencias: 1, indice: 1, aviso: 'XPath absoluto. Considere adicionar um atributo único ao elemento.' };
 }
 
 function isExtensionContextValid() {
@@ -700,4 +319,296 @@ function getSelectors(element) {
     };
 }
 
-export { slugify, downloadFile, showFeedback, debounce, getCSSSelector, getRobustXPath, getSelectors, isExtensionContextValid };
+// Utilitários para limpeza e formatação inspirados no gherkinrecorder
+function limparTexto(texto) {
+    return texto ? texto.replace(/[^a-zA-Z0-9\s]/g, '') : '';
+}
+function toPascalCase(texto) {
+    return texto
+        .toLowerCase()
+        .split(/\s+/)
+        .map(palavra => palavra.charAt(0).toUpperCase() + palavra.slice(1))
+        .join('');
+}
+function escapeXPathText(text) {
+    if (text.indexOf('"') === -1) {
+        return '"' + text + '"';
+    } else if (text.indexOf("'") === -1) {
+        return "'" + text + "'";
+    } else {
+        const parts = text.split('"');
+        return 'concat("' + parts.join('",\'"\',"') + '")';
+    }
+}
+function gerarIdUnico() {
+    return 'id-' + Math.random().toString(36).substr(2, 16);
+}
+class SemanticNameResolver {
+    static obterNomeSemantico(elemento) {
+        let nomeSemantico = '';
+        switch (elemento.tagName.toLowerCase()) {
+            case 'button':
+                nomeSemantico =
+                    elemento.value ||
+                    elemento.innerText ||
+                    elemento.title ||
+                    elemento.name ||
+                    elemento.id ||
+                    elemento.className ||
+                    '';
+                break;
+            case 'input':
+                if (!elemento.type || ['text', 'email', 'password'].includes(elemento.type)) {
+                    const label = document.querySelector(`label[for="${elemento.id}"]`);
+                    nomeSemantico = label ? label.innerText : '';
+                    nomeSemantico =
+                        nomeSemantico ||
+                        elemento.placeholder ||
+                        elemento.title ||
+                        elemento.name ||
+                        elemento.id ||
+                        elemento.className ||
+                        '';
+                } else if (['button', 'submit'].includes(elemento.type)) {
+                    nomeSemantico =
+                        elemento.value ||
+                        elemento.innerText ||
+                        elemento.title ||
+                        elemento.name ||
+                        elemento.id ||
+                        elemento.className ||
+                        '';
+                } else if (['radio', 'checkbox'].includes(elemento.type)) {
+                    nomeSemantico =
+                        elemento.innerText ||
+                        elemento.value ||
+                        elemento.title ||
+                        elemento.name ||
+                        elemento.id ||
+                        elemento.className ||
+                        '';
+                } else {
+                    nomeSemantico =
+                        elemento.value ||
+                        elemento.innerText ||
+                        elemento.title ||
+                        elemento.name ||
+                        elemento.id ||
+                        elemento.className ||
+                        '';
+                }
+                break;
+            case 'span':
+            case 'p':
+            case 'h1':
+            case 'h2':
+            case 'h3':
+            case 'h4':
+            case 'h5':
+            case 'h6':
+            case 'q':
+                nomeSemantico =
+                    elemento.innerText ||
+                    elemento.title ||
+                    elemento.name ||
+                    elemento.id ||
+                    elemento.className ||
+                    '';
+                break;
+            case 'img':
+                nomeSemantico =
+                    elemento.title ||
+                    elemento.alt ||
+                    elemento.name ||
+                    elemento.id ||
+                    elemento.className ||
+                    '';
+                break;
+            case 'select':
+                nomeSemantico =
+                    elemento.options && elemento.options[0] ? elemento.options[0].innerText : '';
+                nomeSemantico =
+                    nomeSemantico ||
+                    elemento.title ||
+                    elemento.name ||
+                    elemento.id ||
+                    elemento.className ||
+                    '';
+                break;
+            default:
+                nomeSemantico =
+                    elemento.name ||
+                    elemento.placeholder ||
+                    elemento.innerText ||
+                    elemento.title ||
+                    elemento.id ||
+                    elemento.className ||
+                    elemento.value ||
+                    '';
+                break;
+        }
+        nomeSemantico = limparTexto(nomeSemantico);
+        nomeSemantico = toPascalCase(nomeSemantico);
+        nomeSemantico = nomeSemantico.slice(0, 15);
+        if (!nomeSemantico) {
+            let pai = elemento.parentElement;
+            while (pai && pai !== document.body) {
+                let nomePai =
+                    pai.name ||
+                    pai.placeholder ||
+                    pai.innerText ||
+                    pai.title ||
+                    pai.id ||
+                    pai.className ||
+                    pai.tagName;
+                nomePai = limparTexto(nomePai);
+                if (nomePai) {
+                    nomeSemantico = toPascalCase(nomePai + (elemento.tagName || ''));
+                    break;
+                }
+                pai = pai.parentElement;
+            }
+        }
+        if (!nomeSemantico) {
+            nomeSemantico = elemento.tagName.toLowerCase();
+        }
+        return nomeSemantico;
+    }
+}
+
+class XPathGenerator {
+    static gerarXpath(element) {
+        if (!element || !element.tagName) return '';
+        return this.getXPath(element, document);
+    }
+    static getXPath(element, root) {
+        if (!element || !element.tagName) return '';
+        // 1) Tenta texto visível
+        const text = element.textContent && element.textContent.trim();
+        if (text) {
+            const escaped = text.replace(/'/g, "\'");
+            const possibleXPaths = [
+                `//${element.tagName}[text()='${escaped}']`,
+                `//${element.tagName}[normalize-space(.)='${escaped}']`,
+                `//${element.tagName}[contains(.,'${escaped}')]`
+            ];
+            for (const xp of possibleXPaths) {
+                if (XPathGenerator.isUnique(xp, root)) {
+                    return xp;
+                } else {
+                    const matches = XPathGenerator.evaluateXPath(xp, root);
+                    if (matches.length > 1) {
+                        for (let i = 0; i < matches.length; i++) {
+                            if (matches[i] === element) {
+                                const indexedXp = `(${xp})[${i + 1}]`;
+                                if (XPathGenerator.isUnique(indexedXp, root)) {
+                                    return indexedXp;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // 2) Tenta atributos relevantes
+        const attrs = ['title', 'aria-label', 'name', 'id', 'placeholder'];
+        if (element.tagName.toLowerCase() === 'input' && element.getAttribute('type') === 'button') {
+            attrs.push('value');
+        }
+        for (const attr of attrs) {
+            if (element.hasAttribute(attr)) {
+                const val = element.getAttribute(attr);
+                const tn = element.tagName.toLowerCase();
+                const xp = `//${tn}[@${attr}="${val}"]`;
+                if (XPathGenerator.isUnique(xp, root)) return xp;
+            }
+        }
+        // 3) Tenta //tagName[N]
+        const tn = element.tagName.toLowerCase();
+        const doc = element.ownerDocument || document;
+        const allSameTag = Array.from(doc.getElementsByTagName(tn));
+        const index = allSameTag.indexOf(element);
+        if (index !== -1) {
+            const xpIndex = `//${tn}[${index + 1}]`;
+            if (XPathGenerator.isUnique(xpIndex, root)) {
+                return xpIndex;
+            }
+        }
+        // 4) Fallback absoluto (como Chrome)
+        return `/${XPathGenerator.getAbsoluteXPathBySiblings(element)}`;
+    }
+    static evaluateXPath(xpath, root = document) {
+        const xPathResult = document.evaluate(
+            xpath,
+            root,
+            null,
+            XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+            null
+        );
+        const nodes = [];
+        for (let i = 0; i < xPathResult.snapshotLength; i++) {
+            nodes.push(xPathResult.snapshotItem(i));
+        }
+        return nodes;
+    }
+    static getAbsoluteXPathBySiblings(element) {
+        if (!element || !element.tagName) return '';
+        const doc = element.ownerDocument || document;
+        if (element === doc.documentElement) return '/html[1]';
+        if (element === doc.body) return '/html[1]/body[1]';
+        const parent = element.parentNode;
+        if (!parent || !(parent instanceof Element)) return `/${element.tagName.toLowerCase()}[1]`;
+        const tagName = element.tagName.toLowerCase();
+        let index = 1;
+        for (const sibling of parent.children) {
+            if (sibling === element) {
+                return (
+                    XPathGenerator.getAbsoluteXPathBySiblings(parent) + `/${tagName}[${index}]`
+                );
+            }
+            if (sibling.tagName && sibling.tagName.toLowerCase() === tagName) {
+                index++;
+            }
+        }
+        return `/${tagName}[1]`;
+    }
+    static isUnique(xpath, root) {
+        try {
+            return (
+                root.evaluate(`count(${xpath})`, root, null, XPathResult.NUMBER_TYPE, null)
+                    .numberValue === 1
+            );
+        } catch {
+            return false;
+        }
+    }
+    static gerarCssSelector(elemento) {
+        if (!elemento) return null;
+        if (elemento.id) {
+            return `#${CSS.escape(elemento.id)}`;
+        }
+        let selector = elemento.tagName.toLowerCase();
+        if (elemento.className) {
+            const classes = Array.from(elemento.classList).map(cls => `.${CSS.escape(cls)}`);
+            selector += classes.join('');
+        }
+        let parent = elemento;
+        const path = [];
+        while (parent && parent.nodeType === Node.ELEMENT_NODE) {
+            let siblings = parent.parentNode ? Array.from(parent.parentNode.children) : [];
+            siblings = siblings.filter(sibling => sibling.tagName === parent.tagName);
+            if (siblings.length > 1) {
+                const index = siblings.indexOf(parent);
+                path.unshift(`${parent.tagName.toLowerCase()}:nth-of-type(${index + 1})`);
+            } else {
+                path.unshift(parent.tagName.toLowerCase());
+            }
+            if (path.length > 3) {
+                break;
+            }
+            parent = parent.parentElement;
+        }
+        return path.join(' > ');
+    }
+}
+//# sourceMappingURL=content.js.map

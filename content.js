@@ -64,6 +64,31 @@ import {
     showXPathModal,
 } from './ui.js';
 import { getConfig } from './config.js';
+import SemanticNameResolver from './utils.js';
+import XPathGenerator from './utils.js';
+import DomInspector from './domInspector.js';
+import EventManager from './eventManager.js';
+import ShadowDomManager from './shadowDomManager.js';
+
+// Inicialização dos managers
+const eventManager = new EventManager((type, element, event) => {
+    DomInspector.inspectElement().then(elementInfo => {
+        window.interactions = window.interactions || [];
+        window.interactions.push({
+            acao: type,
+            nomeElemento: elementInfo.elementName,
+            xpath: elementInfo.xpath,
+            cssSelector: XPathGenerator.gerarCssSelector(element),
+            containerType: elementInfo.containerType,
+            containerXpath: elementInfo.containerXpath,
+            containerElementName: elementInfo.containerElementName,
+            timestamp: Date.now()
+        });
+        // Atualize logs, UI, etc. se necessário
+        if (typeof renderLogWithActions === 'function') renderLogWithActions();
+    });
+});
+const shadowDomManager = new ShadowDomManager(eventManager.handleClick);
 
 // Variáveis globais para controle de múltiplas features/cenários e estado do painel
 if (!window.gherkinFeatures) window.gherkinFeatures = [];
@@ -1221,7 +1246,7 @@ function exportReadmeForFeatures(selectedIdxs) {
 
             readme += `## Observações\n`;
             readme += `- Adapte os seletores e valores conforme necessário para o seu ambiente.\n`;
-            readme += `- Prints das telas podem ser adicionados manualmente após a execução dos testes.\n`;
+            readme += `- Prints das telas podem ser adicionos manualmente após a execução dos testes.\n`;
 
             // Gera arquivo README para cada feature
             const filename = `README_${feature.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
@@ -1386,7 +1411,7 @@ Esta feature cobre o(s) seguinte(s) cenário(s):\n
 
             readme += `## Observações\n`;
             readme += `- Adapte os seletores e valores conforme necessário para o seu ambiente.\n`;
-            readme += `- Prints das telas podem ser adicionados manualmente após a execução dos testes.\n`;
+            readme += `- Prints das telas podem ser adicionos manualmente após a execução dos testes.\n`;
             readme += `- Consulte os arquivos \`pages.py\`, \`steps.py\` e \`environment.py\` para customizações avançadas.\n`;
 
             // Gera arquivo README para cada feature
@@ -1580,106 +1605,129 @@ class Page${slugify(feature.name, true)}:
         espera: tempo (segundos) entre as tentativas.
         """
         tentativa = 0
-        ultimo_erro = None
-        while tentativa < tentativas:
-            try:
+        ultimo_erro = null
+        while (tentativa < tentativas) {
+            try {
                 WebDriverWait(self.driver, self.default_timeout).until(EC.element_to_be_clickable(locator))
                 self.driver.find_element(*locator).click()
-                print(f"[INFO] Clique realizado com sucesso no elemento {locator}.")
-                return
-            except StaleElementReferenceException as e:
-                print(f"[WARN] StaleElementReferenceException ao clicar no elemento {locator}: {e}. Tentando novamente ({tentativa+1}/{tentativas})...")
-                time.sleep(espera)
-                tentativa += 1
-                ultimo_erro = e
-            except (NoSuchElementException, ElementNotInteractableException) as e:
-                print(f"[ERRO] Falha ao clicar no elemento {locator}: {e}")
-                raise
-            except Exception as e:
-                print(f"[ERRO] Erro inesperado ao clicar no elemento {locator}: {e}")
-                raise
-        raise Exception(f"Não foi possível clicar no elemento {locator} após {tentativas} tentativas devido a StaleElementReferenceException. Último erro: {ultimo_erro}")
+                console.log('[INFO] Clique realizado com sucesso no elemento ' + locator + '.');
+                return;
+            } catch (e) {
+                if (e.name === 'StaleElementReferenceException') {
+                    console.log('[WARN] StaleElementReferenceException ao clicar no elemento ' + locator + ': ' + e + '. Tentando novamente (' + (tentativa+1) + '/' + tentativas + ')...');
+                    // time.sleep(espera) // Remover ou adaptar para JS
+                    tentativa += 1;
+                    ultimo_erro = e;
+                } else if (e.name === 'NoSuchElementException') {
+                    console.log('[ERRO] Elemento ' + locator + ' não encontrado: ' + e);
+                    throw e;
+                } else if (e.name === 'ElementNotInteractableException') {
+                    // ...outros tratamentos...
+                } else {
+                    throw e;
+                }
+            }
+        }
+        throw new Exception('Não foi possível clicar no elemento ' + locator + ' após ' + tentativas + ' tentativas devido a StaleElementReferenceException. Último erro: ' + ultimo_erro);
+    }
 
     def preencher(self, locator, valor, tentativas=3, espera=1):
         """
         Preenche o campo identificado pelo locator com o valor informado, com retry automático em caso de StaleElementReferenceException e espera explícita para estar visível.
         """
         tentativa = 0
-        ultimo_erro = None
-        while tentativa < tentativas:
-            try:
+        ultimo_erro = null
+        while (tentativa < tentativas) {
+            try {
                 WebDriverWait(self.driver, self.default_timeout).until(EC.visibility_of_element_located(locator))
                 el = self.driver.find_element(*locator)
                 el.clear()
                 el.send_keys(valor)
-                print(f"[INFO] Preenchimento do campo {locator} com valor '{valor}' realizado com sucesso.")
-                return
-            except StaleElementReferenceException as e:
-                print(f"[WARN] StaleElementReferenceException ao preencher o campo {locator}: {e}. Tentando novamente ({tentativa+1}/{tentativas})...")
-                time.sleep(espera)
-                tentativa += 1
-                ultimo_erro = e
-            except NoSuchElementException as e:
-                print(f"[ERRO] Elemento {locator} não encontrado: {e}")
-                raise
-            except ElementNotInteractableException as e:
-                print(f"[ERRO] Elemento {locator} não interagível: {e}")
-                raise
-            except Exception as e:
-                print(f"[ERRO] Erro inesperado ao preencher {locator}: {e}")
-                raise
-        raise Exception(f"Não foi possível preencher o campo {locator} após {tentativas} tentativas devido a StaleElementReferenceException. Último erro: {ultimo_erro}")
+                // print(f"[INFO] Preenchimento do campo {locator} com valor '{valor}' realizado com sucesso.")
+                return;
+            } catch (e) {
+                if (e.name === 'StaleElementReferenceException') {
+                    console.log('[WARN] StaleElementReferenceException ao preencher o campo ' + locator + ': ' + e + '. Tentando novamente (' + (tentativa+1) + '/' + tentativas + ')...');
+                    // time.sleep(espera) // Remover ou adaptar para JS
+                    tentativa += 1;
+                    ultimo_erro = e;
+                } else if (e.name === 'NoSuchElementException') {
+                    console.log('[ERRO] Elemento ' + locator + ' não encontrado: ' + e);
+                    throw e;
+                } else if (e.name === 'ElementNotInteractableException') {
+                    // ...outros tratamentos...
+                } else {
+                    throw e;
+                }
+            }
+        }
+        throw new Exception('Não foi possível preencher o campo ' + locator + ' após ' + tentativas + ' tentativas devido a StaleElementReferenceException. Último erro: ' + ultimo_erro);
+    }
 
     def selecionar(self, locator, valor, tentativas=3, espera=1):
         """
         Seleciona o valor informado em um campo select identificado pelo locator, com retry automático em caso de StaleElementReferenceException e espera explícita para estar presente.
         """
         tentativa = 0
-        ultimo_erro = None
-        while tentativa < tentativas:
-            try:
+        ultimo_erro = null
+        while (tentativa < tentativas) {
+            try {
                 WebDriverWait(self.driver, self.default_timeout).until(EC.presence_of_element_located(locator))
                 select = Select(self.driver.find_element(*locator))
                 select.select_by_visible_text(valor)
-                print(f"[INFO] Seleção do valor '{valor}' realizada com sucesso em {locator}.")
-                return
-            except StaleElementReferenceException as e:
-                print(f"[WARN] StaleElementReferenceException ao selecionar valor '{valor}' em {locator}: {e}. Tentando novamente ({tentativa+1}/{tentativas})...")
-                time.sleep(espera)
-                tentativa += 1
-                ultimo_erro = e
-            except (NoSuchElementException, ElementNotInteractableException) as e:
-                print(f"[ERRO] Falha ao selecionar valor '{valor}' em {locator}: {e}")
-                raise
-            except Exception as e:
-                print(f"[ERRO] Erro inesperado ao selecionar valor '{valor}' em {locator}: {e}")
-                raise
-        raise Exception(f"Não foi possível selecionar o valor '{valor}' em {locator} após {tentativas} tentativas devido a StaleElementReferenceException. Último erro: {ultimo_erro}")
+                console.log('[INFO] Seleção do valor \'' + valor + '\' realizada com sucesso em ' + locator + '.');
+                return;
+            } catch (e) {
+                if (e.name === 'StaleElementReferenceException') {
+                    console.log('[WARN] StaleElementReferenceException ao selecionar valor \'' + valor + '\' em ' + locator + ': ' + e + '. Tentando novamente (' + (tentativa+1) + '/' + tentativas + ')...');
+                    // time.sleep(espera) // Remover ou adaptar para JS
+                    tentativa += 1;
+                    ultimo_erro = e;
+                } else if (e.name === 'NoSuchElementException') {
+                    console.log('[ERRO] Falha ao selecionar valor \'' + valor + '\' em ' + locator + ': ' + e);
+                    throw e;
+                } else if (e.name === 'ElementNotInteractableException') {
+                    console.log('[ERRO] Elemento ' + locator + ' não interagível: ' + e);
+                    throw e;
+                } else {
+                    throw e;
+                }
+            }
+        }
+        throw new Exception('Não foi possível selecionar o valor \'' + valor + '\' em ' + locator + ' após ' + tentativas + ' tentativas devido a StaleElementReferenceException. Último erro: ' + ultimo_erro);
+    }
 
     def upload_arquivo(self, locator, caminho_arquivo, tentativas=3, espera=1):
         """
         Realiza upload de arquivo no campo identificado pelo locator, com retry automático em caso de StaleElementReferenceException e espera explícita para estar visível.
         """
         tentativa = 0
-        ultimo_erro = None
-        while tentativa < tentativas:
-            try:
+        ultimo_erro = null
+        while (tentativa < tentativas) {
+            try {
                 WebDriverWait(self.driver, self.default_timeout).until(EC.visibility_of_element_located(locator))
                 self.driver.find_element(*locator).send_keys(caminho_arquivo)
-                print(f"[INFO] Upload do arquivo '{caminho_arquivo}' realizado com sucesso em {locator}.")
-                return
-            except StaleElementReferenceException as e:
-                print(f"[WARN] StaleElementReferenceException ao fazer upload do arquivo '{caminho_arquivo}' em {locator}: {e}. Tentando novamente ({tentativa+1}/{tentativas})...")
-                time.sleep(espera)
-                tentativa += 1
-                ultimo_erro = e
-            except (NoSuchElementException, ElementNotInteractableException) as e:
-                print(f"[ERRO] Falha ao fazer upload do arquivo '{caminho_arquivo}' em {locator}: {e}")
-                raise
-            except Exception as e:
-                print(f"[ERRO] Erro inesperado ao fazer upload do arquivo '{caminho_arquivo}' em {locator}: {e}")
-                raise
-        raise Exception(f"Não foi possível fazer upload do arquivo '{caminho_arquivo}' em {locator} após {tentativas} tentativas devido a StaleElementReferenceException. Último erro: {ultimo_erro}")
+                console.log('[INFO] Upload do arquivo \'' + caminho_arquivo + '\' realizado com sucesso em ' + locator + '.');
+                return;
+            } catch (e) {
+                if (e.name === 'StaleElementReferenceException') {
+                    console.log('[WARN] StaleElementReferenceException ao fazer upload do arquivo \'' + caminho_arquivo + '\' em ' + locator + ': ' + e + '. Tentando novamente (' + (tentativa+1) + '/' + tentativas + ')...');
+                    // time.sleep(espera) // Remover ou adaptar para JS
+                    tentativa += 1;
+                    ultimo_erro = e;
+                } else if (e.name === 'NoSuchElementException') {
+                    console.log('[ERRO] Falha ao fazer upload do arquivo \'' + caminho_arquivo + '\' em ' + locator + ': ' + e);
+                    throw e;
+                } else if (e.name === 'ElementNotInteractableException') {
+                    console.log('[ERRO] Elemento ' + locator + ' não interagível: ' + e);
+                    throw e;
+                } else {
+                    throw e;
+                }
+            }
+        }
+        throw new Exception('Não foi possível fazer upload do arquivo \'' + caminho_arquivo + '\' em ' + locator + ' após ' + tentativas + ' tentativas devido a StaleElementReferenceException. Último erro: ' + ultimo_erro);
+    }
 
     def esperar_elemento(self, locator, timeout=None):
         """
@@ -1687,12 +1735,14 @@ class Page${slugify(feature.name, true)}:
         O timeout pode ser informado no método ou será usado o padrão da classe.
         """
         timeout = int(timeout) if timeout is not None else self.default_timeout
-        try:
+        try {
             WebDriverWait(self.driver, timeout).until(EC.presence_of_element_located(locator))
-            print(f"[INFO] Elemento {locator} apareceu na tela (timeout={timeout}s).")
-        except TimeoutException as e:
-            print(f"[ERRO] Timeout ao esperar elemento {locator}: {e}")
-            raise
+            console.log('[INFO] Elemento ' + locator + ' apareceu na tela (timeout=' + timeout + 's).');
+        } catch (e) {
+            console.log('[ERRO] Timeout ao esperar elemento ' + locator + ': ' + e);
+            throw e;
+        }
+    }
 
     def esperar_elemento_desaparecer(self, locator, timeout=None):
         """
@@ -1700,13 +1750,14 @@ class Page${slugify(feature.name, true)}:
         O timeout pode ser informado no método ou será usado o padrão da classe.
         """
         timeout = int(timeout) if timeout is not None else self.default_timeout
-        try:
+        try {
             WebDriverWait(self.driver, timeout).until(EC.invisibility_of_element_located(locator))
-            print(f"[INFO] Elemento {locator} desapareceu da tela (timeout={timeout}s).")
-        except TimeoutException as e:
-            print(f"[ERRO] Timeout ao esperar elemento {locator} desaparecer: {e}")
-            raise
-
+            console.log('[INFO] Elemento ' + locator + ' desapareceu da tela (timeout=' + timeout + 's).');
+        } catch (e) {
+            console.log('[ERRO] Timeout ao esperar elemento ' + locator + ' desaparecer: ' + e);
+            throw e;
+        }
+    }
 `;
             downloadFile(`${featureSlug}_pages.py`, pagesPy);
 
@@ -1751,54 +1802,66 @@ def step_acessa_url(context, url):
     """
     try:
         context.page.acessar_url(url)
-        logger.info(f"Acessou a URL: {url}")
-    except Exception as e:
-        logger.error(f"Erro ao acessar a URL {url}: {e}")
-        raise
+        logger.info('Acessou a URL: ' + url);
+    } catch (Exception e) {
+        logger.error('Erro ao acessar a URL ' + url + ': ' + e);
+        throw e;
+    }
+}
 
 @when('o usuário clica no elemento {elemento}')
 def step_clica_elemento(context, elemento):
     """
     Passo quando para clicar em um elemento.
     """
-    try:
+    try {
         locator_name = LOCATOR_MAP.get(elemento)
         locator = getattr(context.page, locator_name, None)
-        if locator is None:
-            raise Exception(f"Locator para o elemento '{elemento}' não encontrado.")
-        # Se o elemento tem texto após o pipe, valida o texto após o clique
-        texto_esperado = elemento.split('|')[1].strip() if '|' in elemento else None
+        if (locator == null) {
+            throw new Exception('Locator para o elemento \'' + elemento + '\' não encontrado.')
+        }
+        // Se o elemento tem texto após o pipe, valida o texto após o clique
+        texto_esperado = elemento.split('|')[1].trim() if '|' in elemento else null
         context.page.clicar(locator)
-        if texto_esperado:
+        if (texto_esperado) {
             el = context.driver.find_element(*locator)
-            if texto_esperado not in el.text:
-                raise AssertionError(f"Texto '{texto_esperado}' não encontrado no elemento {elemento} após o clique.")
-        logger.info(f"Clicou no elemento: {elemento}")
-    except Exception as e:
-        logger.error(f"Erro ao clicar no elemento {elemento}: {e}")
-        raise
+            if (texto_esperado !in el.text) {
+                throw new AssertionError('Texto \'' + texto_esperado + '\' não encontrado no elemento ' + elemento + ' após o clique.')
+            }
+        }
+        logger.info('Clicou no elemento: ' + elemento);
+    } catch (Exception e) {
+        logger.error('Erro ao clicar no elemento ' + elemento + ': ' + e);
+        throw e;
+    }
+}
 
 @when('o usuário preenche o campo {campo} com "{valor}"')
 def step_preenche_campo(context, campo, valor):
     """
     Passo quando para preencher um campo com um valor.
     """
-    try:
-        locator_name = LOCATOR_MAP.get(campo.lower().split('|')[0].strip())
+    try {
+        locator_name = LOCATOR_MAP.get(campo.lower().split('|')[0].trim())
         locator = getattr(context.page, locator_name, None)
-        if locator is None:
-            raise Exception(f"Locator para o campo '{campo}' não encontrado.")
-        # Se o campo tem texto após o pipe, valida o texto após preencher
-        texto_esperado = campo.split('|')[1].strip() if '|' in campo else None
+        if (locator == null) {
+            throw new Exception('Locator para o campo \'' + campo + '\' não encontrado.')
+        }
+        // Se o campo tem texto após o pipe, valida o texto após preencher
+        texto_esperado = campo.split('|')[1].trim() if '|' in campo else null
         context.page.preencher(locator, valor)
-        if texto_esperado:
+        if (texto_esperado) {
             el = context.driver.find_element(*locator)
-            if texto_esperado not in el.text:
-                raise AssertionError(f"Texto '{texto_esperado}' não encontrado no campo {campo} após preencher.")
-        logger.info(f"Preencheu o campo {campo} com o valor: {valor}")
-    except Exception as e:
-        logger.error(f"Erro ao preencher o campo {campo} com o valor {valor}: {e}")
-        raise
+            if (texto_esperado !in el.text) {
+                throw new AssertionError('Texto \'' + texto_esperado + '\' não encontrado no campo ' + campo + ' após preencher.')
+            }
+        }
+        logger.info('Preencheu o campo ' + campo + ' com o valor: ' + valor);
+    } catch (Exception e) {
+        logger.error('Erro ao preencher o campo ' + campo + ' com o valor ' + valor + ': ' + e);
+        throw e;
+    }
+}
 
 @when('valida que a URL da página é "{url}"')
 @then('valida que a URL da página é "{url}"')
@@ -1806,16 +1869,19 @@ def step_valida_url(context, url):
     """
     Passo então para validar a URL da página.
     """
-    try:
+    try {
         url_atual = context.driver.current_url
-        if url_atual != url:
-            raise AssertionError(f"URL esperada: {url}, mas a URL atual é: {url_atual}")
-        logger.info(f"URL da página validada com sucesso: {url_atual}")
-    except Exception as e:
-        logger.error(f"Erro ao validar a URL da página: {e}")
-        raise
+        if (url_atual != url) {
+            throw new AssertionError('URL esperada: ' + url + ', mas a URL atual é: ' + url_atual)
+        }
+        logger.info('URL da página validada com sucesso: ' + url_atual);
+    } catch (Exception e) {
+        logger.error('Erro ao validar a URL da página: ' + e);
+        throw e;
+    }
+}
 
-# Outros passos (steps) podem ser adicionados aqui conforme necessário
+// Outros passos (steps) podem ser adicionados aqui conforme necessário
 
 
 from selenium.webdriver.common.by import By
@@ -1828,28 +1894,33 @@ from behave import when
 def step_valida_existencia_elemento(context, elemento):
     locator_name = LOCATOR_MAP.get(elemento)
     locator = getattr(context.page, locator_name, None)
-    if locator is None:
-        raise Exception(f"Locator para o elemento '{elemento}' não encontrado.")
-    texto_esperado = elemento.split('|')[1].strip() if '|' in elemento else None
+    if (locator == null) {
+        throw new Exception('Locator para o elemento \'' + elemento + '\' não encontrado.')
+    }
+    texto_esperado = elemento.split('|')[1].trim() if '|' in elemento else null
     WebDriverWait(context.driver, context.default_timeout).until(
         EC.presence_of_element_located(locator)
     )
     el = context.driver.find_element(*locator)
-    if texto_esperado and texto_esperado not in el.text:
-        raise AssertionError(f"Texto '{texto_esperado}' não encontrado no elemento {elemento}.")
-    logger.info(f"Elemento '{elemento}' validado com sucesso.")
+    if (texto_esperado && texto_esperado !in el.text) {
+        throw new AssertionError('Texto \'' + texto_esperado + '\' não encontrado no elemento ' + elemento + '.')
+    }
+    logger.info('Elemento \'' + elemento + '\' validado com sucesso.');
+}
 
 @when('preencho os campos da tabela:')
 def step_preencho_tabela(context):
     for row in context.table:
         campo = row['Campo']
         valor = row['Valor']
-        locator_name = LOCATOR_MAP.get(campo.lower().split('|')[0].strip())
+        locator_name = LOCATOR_MAP.get(campo.lower().split('|')[0].trim())
         locator = getattr(context.page, locator_name, None)
-        if locator is None:
-            raise Exception(f"Locator para o campo '{campo}' não encontrado.")
+        if (locator == null) {
+            throw new Exception('Locator para o campo \'' + campo + '\' não encontrado.')
+        }
         context.page.preencher(locator, valor)
-        logger.info(f"Preencheu o campo {campo} com o valor: {valor}")
+        logger.info('Preencheu o campo ' + campo + ' com o valor: ' + valor);
+}
 `;
             downloadFile(`${featureSlug}_steps.py`, stepsPy);
 
@@ -1881,27 +1952,29 @@ def before_all(context):
     chrome_options.add_argument('--start-maximized')
     # Permite customizar o caminho do chromedriver via variável de ambiente
     chromedriver_path = os.getenv('CHROMEDRIVER_PATH')
-    if chromedriver_path:
+    if (chromedriver_path) {
         service = Service(chromedriver_path)
         context.driver = webdriver.Chrome(service=service, options=chrome_options)
-    else:
+    } else {
         context.driver = webdriver.Chrome(options=chrome_options)
+    }
     context.driver.implicitly_wait(5)
     context.default_timeout = int(os.getenv('SELENIUM_TIMEOUT', 10))  # Timeout padrão de 10 segundos, parametrizável por variável de ambiente
     # Inicializa o Page Object Model
     context.page = Page${slugify(feature.name, true)}(context.driver)
-    print("[INFO] WebDriver e Page Object inicializados com sucesso.")
+    console.log("[INFO] WebDriver e Page Object inicializados com sucesso.")
 
 def after_all(context):
     """
     Executado uma vez após todos os cenários.
     Encerra o WebDriver.
     """
-    # TODO: Ajustar o mapeamento dos locators se necessário.
-    if hasattr(context, 'driver'):
+    // TODO: Ajustar o mapeamento dos locators se necessário.
+    if (hasattr(context, 'driver')) {
         context.driver.quit()
-        print("[INFO] WebDriver finalizado.")
-    print("[INFO] Testes finalizados.")
+        console.log("[INFO] WebDriver finalizado.")
+    }
+    console.log("[INFO] Testes finalizados.")
 
 # Outros hooks e configurações podem ser adicionados aqui conforme necessário
 `;
